@@ -1,14 +1,15 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useState } from "react";
 import PageHeader from "../components/PageHeader";
 import GradientButton from "../components/GradientButton";
-import { Home, MapPin, Ruler } from "lucide-react";
+import { MapPin, Ruler, ChevronLeft, ChevronRight } from "lucide-react";
 import { housesData } from "./Houses";
 import { toast } from "sonner";
 
 const HouseDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const house = housesData.find(h => h.id === Number(id));
+  const [photoIdx, setPhotoIdx] = useState(0);
 
   if (!house) {
     return (
@@ -19,14 +20,54 @@ const HouseDetail = () => {
     );
   }
 
+  const photos = house.photos || [];
+
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
       <PageHeader title={house.name} backTo="/houses" />
 
       <div className="animate-fade-in">
-        {/* House image placeholder */}
-        <div className="w-full h-48 rounded-2xl glass border border-neon-yellow/20 flex items-center justify-center mb-4">
-          <Home className="w-16 h-16 text-neon-yellow/30" />
+        {/* Photo carousel */}
+        <div className="relative w-full h-52 rounded-2xl glass border border-neon-yellow/20 flex items-center justify-center mb-2 overflow-hidden">
+          <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent pointer-events-none" />
+          {photos.length > 1 && (
+            <>
+              <button
+                onClick={() => setPhotoIdx(i => (i - 1 + photos.length) % photos.length)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center active:scale-90 transition-all"
+              >
+                <ChevronLeft className="w-4 h-4 text-foreground" />
+              </button>
+              <button
+                onClick={() => setPhotoIdx(i => (i + 1) % photos.length)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center active:scale-90 transition-all"
+              >
+                <ChevronRight className="w-4 h-4 text-foreground" />
+              </button>
+            </>
+          )}
+          {/* Category badge */}
+          <span className={`absolute top-3 right-3 text-[10px] px-2.5 py-1 rounded-lg font-medium ${
+            house.category === "Люкс"
+              ? "bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30"
+              : "bg-primary/20 text-primary border border-primary/30"
+          }`}>
+            {house.category}
+          </span>
+        </div>
+
+        {/* Photo dots */}
+        <div className="flex justify-center gap-1.5 mb-4">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPhotoIdx(i)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === photoIdx ? "bg-neon-yellow w-4" : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
         </div>
 
         <div className="glass rounded-2xl p-4 mb-4">
@@ -39,7 +80,7 @@ const HouseDetail = () => {
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">Локація</span>
               </div>
-              <span className="text-xs font-medium text-foreground">Чернігів</span>
+              <span className="text-xs font-medium text-foreground">📍 Чернігів</span>
             </div>
             <div className="glass rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
