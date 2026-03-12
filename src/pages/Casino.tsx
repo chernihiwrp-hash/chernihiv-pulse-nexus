@@ -1,15 +1,18 @@
 import { Dices, Target, Hash, Spade, Rocket } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import NeonCard from "../components/NeonCard";
 
 const games = [
-  { icon: Dices, name: "Слоти", desc: "Крути барабан", color: "purple" as const },
-  { icon: Target, name: "Кості", desc: "Кинь кубики", color: "green" as const },
-  { icon: Hash, name: "Вгадай число", desc: "1–100", color: "purple" as const },
-  { icon: Spade, name: "Блекджек", desc: "Класика", color: "green" as const },
-  { icon: Rocket, name: "Ракета", desc: "Crash гра", color: "purple" as const },
+  { icon: Dices, name: "Слоти", desc: "Крути барабан", color: "purple" as const, path: "/casino/slots" },
+  { icon: Target, name: "Кості", desc: "Кинь кубики", color: "green" as const, path: "/casino/dice" },
+  { icon: Hash, name: "Вгадай число", desc: "1–100", color: "purple" as const, path: "/casino/guess" },
+  { icon: Spade, name: "Блекджек", desc: "Класика", color: "green" as const, path: "/casino/blackjack" },
+  { icon: Rocket, name: "Ракета", desc: "Crash гра", color: "purple" as const, path: "/casino/rocket" },
 ];
 
 const Casino = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
       <h1 className="font-display text-xl font-bold tracking-wider neon-text-purple mb-2">
@@ -24,7 +27,7 @@ const Casino = () => {
             className="animate-slide-up"
             style={{ animationDelay: `${i * 80}ms` }}
           >
-            <NeonCard glowColor={g.color} className="flex items-center gap-4">
+            <NeonCard glowColor={g.color} className="flex items-center gap-4" onClick={() => navigate(g.path)}>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                 g.color === "purple" ? "bg-secondary/20 border border-secondary/30" : "bg-primary/10 border border-primary/20"
               }`}>
