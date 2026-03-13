@@ -47,7 +47,7 @@ const Slots = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="СЛОТИ" subtitle="Крути барабан" backTo="/casino" glowColor="purple" />
+      <PageHeader title="СЛОТИ" subtitle="Крути барабан" backTo="/casino" />
 
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">

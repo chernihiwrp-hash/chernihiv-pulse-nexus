@@ -11,7 +11,7 @@ const wantedList = [
 const Wanted = () => {
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="РОЗШУК" subtitle="Список розшуку" backTo="/" glowColor="purple" />
+      <PageHeader title="РОЗШУК" subtitle="Список розшуку" backTo="/" />
 
       <div className="space-y-3">
         {wantedList.map((w, i) => (

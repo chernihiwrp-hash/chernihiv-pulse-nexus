@@ -64,7 +64,7 @@ const Rocket = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="РАКЕТА" subtitle="Crash гра" backTo="/casino" glowColor="purple" />
+      <PageHeader title="РАКЕТА" subtitle="Crash гра" backTo="/casino" />
 
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 text-center relative overflow-hidden">
