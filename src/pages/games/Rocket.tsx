@@ -58,7 +58,7 @@ const Rocket = () => {
     if (cashedOut) return "text-primary";
     if (multiplier >= 5) return "text-neon-yellow";
     if (multiplier >= 3) return "text-neon-pink";
-    if (multiplier >= 2) return "text-secondary";
+    if (multiplier >= 2) return "text-neon-cyan";
     return "text-primary";
   };
 
