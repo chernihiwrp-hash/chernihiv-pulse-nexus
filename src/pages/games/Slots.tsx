@@ -51,7 +51,7 @@ const Slots = () => {
 
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-secondary/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
           
           <p className="text-[10px] text-muted-foreground text-center mb-4">Спінів сьогодні: {spinsToday}/30</p>
 
