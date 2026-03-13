@@ -59,7 +59,7 @@ const Slots = () => {
             {reels.map((s, i) => (
               <div
                 key={i}
-                className={`w-20 h-24 rounded-xl glass border border-secondary/30 flex items-center justify-center text-4xl transition-all ${spinning ? "animate-pulse scale-105" : ""}`}
+                className={`w-20 h-24 rounded-xl glass border border-primary/20 flex items-center justify-center text-4xl transition-all ${spinning ? "animate-pulse scale-105" : ""}`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 {s}
