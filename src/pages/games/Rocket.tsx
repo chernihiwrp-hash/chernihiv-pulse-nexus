@@ -69,7 +69,7 @@ const Rocket = () => {
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 text-center relative overflow-hidden">
           {/* Neon background effect */}
-          <div className="absolute inset-0 bg-gradient-to-t from-secondary/5 via-transparent to-neon-pink/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-neon-cyan/5 pointer-events-none" />
           
           {/* Rocket */}
           <div className={`relative transition-all duration-300 ${flying ? "animate-bounce" : ""}`}>
