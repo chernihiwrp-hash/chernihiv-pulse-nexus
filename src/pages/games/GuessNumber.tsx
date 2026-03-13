@@ -50,7 +50,7 @@ const GuessNumber = () => {
           <p className="text-[10px] text-muted-foreground">Точне = x50 | ±5 = x5 | ±15 = нічия</p>
         </div>
 
-        <GradientButton variant="purple" className="w-full" onClick={play}>
+        <GradientButton variant="cyan" className="w-full" onClick={play}>
           Вгадати — {bet} CR
         </GradientButton>
       </div>

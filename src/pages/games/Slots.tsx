@@ -83,7 +83,7 @@ const Slots = () => {
           </div>
         </div>
 
-        <GradientButton variant="purple" className="w-full text-base" onClick={spin} disabled={spinning || spinsToday >= 30}>
+        <GradientButton variant="cyan" className="w-full text-base" onClick={spin} disabled={spinning || spinsToday >= 30}>
           {spinning ? "🎰 Крутиться..." : spinsToday >= 30 ? "Ліміт вичерпано" : "🎰 Крутити!"}
         </GradientButton>
       </div>

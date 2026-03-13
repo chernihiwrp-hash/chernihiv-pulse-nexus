@@ -94,7 +94,7 @@ const Blackjack = () => {
             <GradientButton variant="green" className="flex-1" onClick={hit}>
               Ще карту
             </GradientButton>
-            <GradientButton variant="purple" className="flex-1" onClick={stand}>
+            <GradientButton variant="cyan" className="flex-1" onClick={stand}>
               Стоп
             </GradientButton>
           </div>

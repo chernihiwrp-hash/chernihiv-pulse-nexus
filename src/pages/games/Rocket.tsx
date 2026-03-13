@@ -125,7 +125,7 @@ const Rocket = () => {
             💰 Забрати x{multiplier.toFixed(2)} ({Math.floor(bet * multiplier)} CR)
           </GradientButton>
         ) : (
-          <GradientButton variant="purple" className="w-full" onClick={startGame}>
+          <GradientButton variant="cyan" className="w-full" onClick={startGame}>
             🚀 Запустити — {bet} CR
           </GradientButton>
         )}
