@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface GradientButtonProps {
   children: ReactNode;
   onClick?: () => void;
-  variant?: "green" | "lime" | "purple" | "yellow" | "cyan";
+  variant?: "green" | "lime" | "yellow" | "cyan" | "danger";
   className?: string;
   disabled?: boolean;
   type?: "button" | "submit";
@@ -13,17 +13,17 @@ interface GradientButtonProps {
 const gradients = {
   green: "bg-gradient-to-r from-[hsl(84,81%,44%)] via-[hsl(142,71%,45%)] to-[hsl(152,76%,30%)]",
   lime: "bg-gradient-to-r from-[hsl(84,81%,44%)] via-[hsl(142,71%,45%)] to-[hsl(152,76%,30%)]",
-  purple: "bg-gradient-to-r from-secondary to-neon-pink",
   yellow: "bg-gradient-to-r from-neon-yellow to-[hsl(30,100%,55%)]",
   cyan: "bg-gradient-to-r from-[hsl(180,100%,50%)] to-primary",
+  danger: "bg-gradient-to-r from-[hsl(0,70%,50%)] to-[hsl(0,60%,35%)]",
 };
 
 const glowStyles = {
   green: "shadow-[0_0_20px_hsl(142,71%,45%,0.4),0_0_40px_hsl(84,81%,44%,0.15)]",
   lime: "shadow-[0_0_20px_hsl(84,81%,44%,0.4),0_0_40px_hsl(142,71%,45%,0.15)]",
-  purple: "shadow-[0_0_20px_hsl(263,86%,65%,0.4),0_0_40px_hsl(330,100%,60%,0.15)]",
   yellow: "shadow-[0_0_20px_hsl(45,100%,55%,0.4)]",
   cyan: "shadow-[0_0_20px_hsl(180,100%,50%,0.3)]",
+  danger: "shadow-[0_0_20px_hsl(0,70%,50%,0.4)]",
 };
 
 const GradientButton = ({
