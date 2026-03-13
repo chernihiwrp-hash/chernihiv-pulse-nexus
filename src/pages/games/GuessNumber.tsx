@@ -32,7 +32,7 @@ const GuessNumber = () => {
         <div className="glass rounded-2xl p-6 mb-4 text-center">
           {result !== null && (
             <div className="mb-4">
-              <span className="text-5xl font-bold text-secondary">{result}</span>
+              <span className="text-5xl font-bold text-primary">{result}</span>
               <p className="text-xs text-muted-foreground mt-1">Випало число</p>
             </div>
           )}
