@@ -25,7 +25,7 @@ const Documents = () => {
                   <h3 className="text-sm font-semibold text-foreground">{d.title}</h3>
                   <p className="text-[10px] text-muted-foreground">{d.desc}</p>
                 </div>
-                <span className="text-xs text-secondary">Читати →</span>
+                <span className="text-xs text-primary">Читати →</span>
               </div>
             </NeonCard>
           </div>
