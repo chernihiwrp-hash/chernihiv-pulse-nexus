@@ -75,9 +75,9 @@ const Rocket = () => {
           <div className={`relative transition-all duration-300 ${flying ? "animate-bounce" : ""}`}>
             <RocketIcon
               className={`w-20 h-20 mx-auto mb-4 transition-all duration-300 ${
-                crashed ? "text-destructive rotate-180 opacity-60" : cashedOut ? "text-primary" : "text-secondary"
+                crashed ? "text-destructive rotate-180 opacity-60" : cashedOut ? "text-primary" : "text-neon-cyan"
               }`}
-              style={flying ? { filter: `drop-shadow(0 0 12px hsl(263, 86%, 65%, 0.6))` } : undefined}
+              style={flying ? { filter: `drop-shadow(0 0 12px hsl(84, 81%, 44%, 0.6))` } : undefined}
             />
           </div>
 
