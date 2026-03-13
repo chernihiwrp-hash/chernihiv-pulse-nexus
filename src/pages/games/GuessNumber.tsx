@@ -44,7 +44,7 @@ const GuessNumber = () => {
             value={guess}
             onChange={e => setGuess(e.target.value)}
             placeholder="Ваше число"
-            className="w-full glass rounded-xl px-4 py-4 text-center text-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary/50 mb-4"
+            className="w-full glass rounded-xl px-4 py-4 text-center text-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 mb-4"
           />
 
           <p className="text-[10px] text-muted-foreground">Точне = x50 | ±5 = x5 | ±15 = нічия</p>

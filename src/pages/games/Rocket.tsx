@@ -111,7 +111,7 @@ const Rocket = () => {
                 key={b}
                 onClick={() => !flying && setBet(b)}
                 className={`text-[11px] px-3 py-1.5 rounded-lg border transition-all active:scale-95 ${
-                  bet === b ? "bg-secondary/20 border-secondary/40 text-secondary" : "glass text-muted-foreground"
+                  bet === b ? "bg-primary/15 border-primary/30 text-primary" : "glass text-muted-foreground"
                 }`}
               >
                 {b}
