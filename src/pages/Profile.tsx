@@ -1,26 +1,28 @@
 import { User, Briefcase, Home, Car, FileCheck, Wallet, Shield } from "lucide-react";
 import GradientButton from "../components/GradientButton";
 import { useNavigate } from "react-router-dom";
+import passportBg from "../assets/passport-bg.jpg";
 
 const Profile = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <h1 className="font-display text-xl font-bold tracking-wider neon-text-green mb-6">
+      <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime mb-6">
         ПРОФІЛЬ
       </h1>
 
-      {/* Passport Card */}
+      {/* Passport Card — Realistic ID */}
       <div className="relative rounded-2xl overflow-hidden mb-6 animate-fade-in">
-        {/* Ukraine flag gradient background */}
-        <div className="absolute inset-0">
-          <div className="h-1/2 bg-[hsl(210,80%,35%)]" />
-          <div className="h-1/2 bg-[hsl(50,90%,50%)]" />
-          <div className="absolute inset-0 bg-background/85 backdrop-blur-md" />
-        </div>
+        {/* Background image */}
+        <img
+          src={passportBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-background/88 backdrop-blur-sm" />
 
-        <div className="relative p-5 border border-primary/30 rounded-2xl glow-green">
+        <div className="relative p-5 border border-primary/25 rounded-2xl" style={{ boxShadow: '0 0 30px hsl(84 81% 44% / 0.15)' }}>
           {/* Header */}
           <div className="text-center mb-4">
             <p className="text-[9px] text-muted-foreground tracking-[0.3em] uppercase mb-2">Паспорт громадянина</p>
@@ -28,7 +30,7 @@ const Profile = () => {
           </div>
 
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-18 h-18 rounded-2xl bg-muted border-2 border-primary/30 flex items-center justify-center overflow-hidden"
+            <div className="w-18 h-18 rounded-2xl bg-muted border-2 border-primary/25 flex items-center justify-center overflow-hidden"
               style={{ width: 72, height: 72 }}>
               <User className="w-9 h-9 text-muted-foreground" />
             </div>
@@ -49,7 +51,7 @@ const Profile = () => {
               { icon: Car, label: "Авто", value: "Немає" },
               { icon: FileCheck, label: "Ліцензії", value: "0" },
             ].map((item) => (
-              <div key={item.label} className="glass rounded-xl p-3">
+              <div key={item.label} className="liquid-glass rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="text-[10px] text-muted-foreground">{item.label}</span>
@@ -66,7 +68,7 @@ const Profile = () => {
         <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
           <Shield className="w-3.5 h-3.5" /> Моя нерухомість
         </h3>
-        <div className="glass rounded-2xl p-4 text-center">
+        <div className="liquid-glass-card rounded-2xl p-4 text-center">
           <p className="text-xs text-muted-foreground">У вас поки немає нерухомості</p>
           <GradientButton variant="green" className="mt-3 text-xs py-2 px-4" onClick={() => navigate("/houses")}>
             Переглянути будинки
@@ -74,13 +76,26 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Licenses Section */}
+      <div className="mb-4">
+        <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+          <FileCheck className="w-3.5 h-3.5" /> Мої ліцензії
+        </h3>
+        <div className="liquid-glass-card rounded-2xl p-4 text-center">
+          <p className="text-xs text-muted-foreground">У вас поки немає ліцензій</p>
+          <GradientButton variant="green" className="mt-3 text-xs py-2 px-4" onClick={() => navigate("/licenses")}>
+            Отримати ліцензію
+          </GradientButton>
+        </div>
+      </div>
+
       {/* Actions */}
       <div className="space-y-3">
-        <button className="w-full glass rounded-2xl p-4 text-left card-press hover:border-primary/20 transition-colors active:scale-[0.98]">
+        <button className="w-full liquid-glass-card rounded-2xl p-4 text-left card-press hover:border-primary/20 transition-colors active:scale-[0.98]">
           <span className="text-sm font-medium text-foreground">Реєстрація</span>
           <p className="text-[10px] text-muted-foreground mt-0.5">Створити профіль гравця</p>
         </button>
-        <button className="w-full glass rounded-2xl p-4 text-left card-press hover:border-primary/20 transition-colors active:scale-[0.98]">
+        <button className="w-full liquid-glass-card rounded-2xl p-4 text-left card-press hover:border-primary/20 transition-colors active:scale-[0.98]">
           <span className="text-sm font-medium text-foreground">Налаштування</span>
           <p className="text-[10px] text-muted-foreground mt-0.5">Редагувати дані</p>
         </button>

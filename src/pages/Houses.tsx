@@ -23,7 +23,7 @@ const Houses = () => {
       <PageHeader title="БУДИНКИ" subtitle="Нерухомість міста" backTo="/" />
 
       {/* Counter */}
-      <div className="glass rounded-2xl p-3 mb-4 flex items-center justify-around animate-fade-in">
+      <div className="liquid-glass-card rounded-2xl p-3 mb-4 flex items-center justify-around animate-fade-in">
         <div className="text-center">
           <span className="text-lg font-bold text-foreground">{total}</span>
           <p className="text-[9px] text-muted-foreground">Всього</p>
@@ -45,7 +45,7 @@ const Houses = () => {
           <div key={h.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
             <NeonCard glowColor="yellow" onClick={() => navigate(`/houses/${h.id}`)}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl bg-neon-yellow/10 border border-neon-yellow/20 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-neon-yellow/10 border border-neon-yellow/15 flex items-center justify-center">
                   {h.category === "Люкс" ? <Building className="w-6 h-6 text-neon-yellow" /> : <Home className="w-6 h-6 text-neon-yellow" />}
                 </div>
                 <div className="flex-1">
@@ -53,8 +53,8 @@ const Houses = () => {
                     <h3 className="text-sm font-semibold text-foreground">{h.name}</h3>
                     <span className={`text-[9px] px-2 py-0.5 rounded-md font-medium ${
                       h.category === "Люкс"
-                        ? "bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/20"
-                        : "bg-primary/15 text-primary border border-primary/20"
+                        ? "bg-neon-yellow/12 text-neon-yellow border border-neon-yellow/15"
+                        : "bg-primary/12 text-primary border border-primary/15"
                     }`}>
                       {h.category}
                     </span>
@@ -63,10 +63,9 @@ const Houses = () => {
                 </div>
               </div>
 
-              {/* Mini photo carousel */}
               <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
                 {h.photos.map((p, j) => (
-                  <div key={j} className="w-12 h-12 rounded-lg glass border border-border/50 flex items-center justify-center text-lg shrink-0">
+                  <div key={j} className="w-12 h-12 rounded-lg liquid-glass flex items-center justify-center text-lg shrink-0">
                     {p}
                   </div>
                 ))}
