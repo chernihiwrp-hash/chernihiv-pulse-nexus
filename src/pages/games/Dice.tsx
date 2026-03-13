@@ -61,7 +61,7 @@ const Dice = () => {
             <button
               onClick={() => setGuess("low")}
               className={`px-6 py-2 rounded-xl text-sm font-medium transition-all active:scale-95 ${
-                guess === "low" ? "bg-secondary/20 border border-secondary/40 text-secondary" : "glass text-muted-foreground"
+                guess === "low" ? "bg-primary/20 border border-primary/40 text-primary" : "glass text-muted-foreground"
               }`}
             >
               Низьке ↓

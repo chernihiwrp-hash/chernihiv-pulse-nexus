@@ -47,11 +47,11 @@ const Slots = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="СЛОТИ" subtitle="Крути барабан" backTo="/casino" glowColor="purple" />
+      <PageHeader title="СЛОТИ" subtitle="Крути барабан" backTo="/casino" />
 
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-secondary/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
           
           <p className="text-[10px] text-muted-foreground text-center mb-4">Спінів сьогодні: {spinsToday}/30</p>
 
@@ -59,7 +59,7 @@ const Slots = () => {
             {reels.map((s, i) => (
               <div
                 key={i}
-                className={`w-20 h-24 rounded-xl glass border border-secondary/30 flex items-center justify-center text-4xl transition-all ${spinning ? "animate-pulse scale-105" : ""}`}
+                className={`w-20 h-24 rounded-xl glass border border-primary/20 flex items-center justify-center text-4xl transition-all ${spinning ? "animate-pulse scale-105" : ""}`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 {s}
@@ -74,7 +74,7 @@ const Slots = () => {
                 key={b}
                 onClick={() => setBet(b)}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition-all active:scale-95 ${
-                  bet === b ? "bg-secondary/20 border-secondary/40 text-secondary" : "glass text-muted-foreground"
+                  bet === b ? "bg-primary/15 border-primary/30 text-primary" : "glass text-muted-foreground"
                 }`}
               >
                 {b} CR
@@ -83,7 +83,7 @@ const Slots = () => {
           </div>
         </div>
 
-        <GradientButton variant="purple" className="w-full text-base" onClick={spin} disabled={spinning || spinsToday >= 30}>
+        <GradientButton variant="cyan" className="w-full text-base" onClick={spin} disabled={spinning || spinsToday >= 30}>
           {spinning ? "🎰 Крутиться..." : spinsToday >= 30 ? "Ліміт вичерпано" : "🎰 Крутити!"}
         </GradientButton>
       </div>

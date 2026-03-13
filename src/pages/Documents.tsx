@@ -16,16 +16,16 @@ const Documents = () => {
       <div className="space-y-3">
         {docs.map((d, i) => (
           <div key={i} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
-            <NeonCard glowColor="purple">
+            <NeonCard glowColor="lime">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-secondary/20 border border-secondary/30 flex items-center justify-center">
-                  <d.icon className="w-5 h-5 text-secondary" />
+                <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center">
+                  <d.icon className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-foreground">{d.title}</h3>
                   <p className="text-[10px] text-muted-foreground">{d.desc}</p>
                 </div>
-                <span className="text-xs text-secondary">Читати →</span>
+                <span className="text-xs text-primary">Читати →</span>
               </div>
             </NeonCard>
           </div>

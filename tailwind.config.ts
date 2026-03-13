@@ -55,10 +55,10 @@ export default {
         neon: {
           green: "hsl(var(--neon-green))",
           lime: "hsl(var(--neon-lime))",
-          purple: "hsl(var(--neon-purple))",
           yellow: "hsl(var(--neon-yellow))",
           pink: "hsl(var(--neon-pink))",
           cyan: "hsl(var(--neon-cyan))",
+          red: "hsl(var(--neon-red))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -97,6 +97,10 @@ export default {
           "0%": { opacity: "0", transform: "translateY(20px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-4px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -104,6 +108,7 @@ export default {
         "fade-in": "fade-in 0.4s ease-out forwards",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "slide-up": "slide-up 0.5s ease-out forwards",
+        "float": "float 3s ease-in-out infinite",
       },
     },
   },

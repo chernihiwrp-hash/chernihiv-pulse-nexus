@@ -14,7 +14,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 liquid-glass-strong border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }}>
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;
@@ -28,7 +28,7 @@ const BottomNav = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <tab.icon className={`w-5 h-5 ${isActive ? "drop-shadow-[0_0_8px_hsl(142,71%,45%,0.7)]" : ""}`} />
+              <tab.icon className={`w-5 h-5 ${isActive ? "drop-shadow-[0_0_8px_hsl(84,81%,44%,0.7)]" : ""}`} />
               <span className="text-[10px] font-medium">{tab.label}</span>
               {isActive && (
                 <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-pulse-glow" />

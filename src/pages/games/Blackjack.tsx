@@ -65,7 +65,7 @@ const Blackjack = () => {
               <p className="text-xs text-muted-foreground mb-2">Дилер ({gameOver ? sum(dealerCards) : "?"})</p>
               <div className="flex gap-2">
                 {dealerCards.map((c, i) => (
-                  <div key={i} className="w-12 h-16 rounded-lg glass border border-secondary/30 flex items-center justify-center text-sm font-bold text-secondary">
+                  <div key={i} className="w-12 h-16 rounded-lg glass border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                     {gameOver || i === 0 ? c : "?"}
                   </div>
                 ))}
@@ -94,7 +94,7 @@ const Blackjack = () => {
             <GradientButton variant="green" className="flex-1" onClick={hit}>
               Ще карту
             </GradientButton>
-            <GradientButton variant="purple" className="flex-1" onClick={stand}>
+            <GradientButton variant="cyan" className="flex-1" onClick={stand}>
               Стоп
             </GradientButton>
           </div>

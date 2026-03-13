@@ -11,12 +11,12 @@ const wantedList = [
 const Wanted = () => {
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="РОЗШУК" subtitle="Список розшуку" backTo="/" glowColor="purple" />
+      <PageHeader title="РОЗШУК" subtitle="Список розшуку" backTo="/" />
 
       <div className="space-y-3">
         {wantedList.map((w, i) => (
           <div key={i} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
-            <NeonCard glowColor="purple">
+            <NeonCard glowColor="red">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-destructive/20 border border-destructive/30 flex items-center justify-center">
                   <AlertTriangle className="w-5 h-5 text-destructive" />

@@ -28,30 +28,29 @@ const HouseDetail = () => {
 
       <div className="animate-fade-in">
         {/* Photo carousel */}
-        <div className="relative w-full h-52 rounded-2xl glass border border-neon-yellow/20 flex items-center justify-center mb-2 overflow-hidden">
+        <div className="relative w-full h-52 rounded-2xl liquid-glass-card border-neon-yellow/15 flex items-center justify-center mb-2 overflow-hidden">
           <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent pointer-events-none" />
           {photos.length > 1 && (
             <>
               <button
                 onClick={() => setPhotoIdx(i => (i - 1 + photos.length) % photos.length)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center active:scale-90 transition-all"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full liquid-glass flex items-center justify-center active:scale-90 transition-all"
               >
                 <ChevronLeft className="w-4 h-4 text-foreground" />
               </button>
               <button
                 onClick={() => setPhotoIdx(i => (i + 1) % photos.length)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center active:scale-90 transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full liquid-glass flex items-center justify-center active:scale-90 transition-all"
               >
                 <ChevronRight className="w-4 h-4 text-foreground" />
               </button>
             </>
           )}
-          {/* Category badge */}
           <span className={`absolute top-3 right-3 text-[10px] px-2.5 py-1 rounded-lg font-medium ${
             house.category === "Люкс"
-              ? "bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30"
-              : "bg-primary/20 text-primary border border-primary/30"
+              ? "bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/20"
+              : "bg-primary/15 text-primary border border-primary/20"
           }`}>
             {house.category}
           </span>
@@ -70,19 +69,19 @@ const HouseDetail = () => {
           ))}
         </div>
 
-        <div className="glass rounded-2xl p-4 mb-4">
+        <div className="liquid-glass-card rounded-2xl p-4 mb-4">
           <h2 className="text-lg font-bold text-foreground mb-1">{house.name}</h2>
           <p className="text-sm text-muted-foreground mb-4">{house.desc}</p>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="glass rounded-xl p-3">
+            <div className="liquid-glass rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">Локація</span>
               </div>
               <span className="text-xs font-medium text-foreground">📍 Чернігів</span>
             </div>
-            <div className="glass rounded-xl p-3">
+            <div className="liquid-glass rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Ruler className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">Статус</span>

@@ -58,26 +58,26 @@ const Rocket = () => {
     if (cashedOut) return "text-primary";
     if (multiplier >= 5) return "text-neon-yellow";
     if (multiplier >= 3) return "text-neon-pink";
-    if (multiplier >= 2) return "text-secondary";
+    if (multiplier >= 2) return "text-neon-cyan";
     return "text-primary";
   };
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <PageHeader title="РАКЕТА" subtitle="Crash гра" backTo="/casino" glowColor="purple" />
+      <PageHeader title="РАКЕТА" subtitle="Crash гра" backTo="/casino" />
 
       <div className="animate-fade-in">
         <div className="glass rounded-2xl p-6 mb-4 text-center relative overflow-hidden">
           {/* Neon background effect */}
-          <div className="absolute inset-0 bg-gradient-to-t from-secondary/5 via-transparent to-neon-pink/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-neon-cyan/5 pointer-events-none" />
           
           {/* Rocket */}
           <div className={`relative transition-all duration-300 ${flying ? "animate-bounce" : ""}`}>
             <RocketIcon
               className={`w-20 h-20 mx-auto mb-4 transition-all duration-300 ${
-                crashed ? "text-destructive rotate-180 opacity-60" : cashedOut ? "text-primary" : "text-secondary"
+                crashed ? "text-destructive rotate-180 opacity-60" : cashedOut ? "text-primary" : "text-neon-cyan"
               }`}
-              style={flying ? { filter: `drop-shadow(0 0 12px hsl(263, 86%, 65%, 0.6))` } : undefined}
+              style={flying ? { filter: `drop-shadow(0 0 12px hsl(84, 81%, 44%, 0.6))` } : undefined}
             />
           </div>
 
@@ -111,7 +111,7 @@ const Rocket = () => {
                 key={b}
                 onClick={() => !flying && setBet(b)}
                 className={`text-[11px] px-3 py-1.5 rounded-lg border transition-all active:scale-95 ${
-                  bet === b ? "bg-secondary/20 border-secondary/40 text-secondary" : "glass text-muted-foreground"
+                  bet === b ? "bg-primary/15 border-primary/30 text-primary" : "glass text-muted-foreground"
                 }`}
               >
                 {b}
@@ -125,7 +125,7 @@ const Rocket = () => {
             💰 Забрати x{multiplier.toFixed(2)} ({Math.floor(bet * multiplier)} CR)
           </GradientButton>
         ) : (
-          <GradientButton variant="purple" className="w-full" onClick={startGame}>
+          <GradientButton variant="cyan" className="w-full" onClick={startGame}>
             🚀 Запустити — {bet} CR
           </GradientButton>
         )}
