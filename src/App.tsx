@@ -24,6 +24,7 @@ import Dice from "./pages/games/Dice";
 import GuessNumber from "./pages/games/GuessNumber";
 import Blackjack from "./pages/games/Blackjack";
 import Rocket from "./pages/games/Rocket";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/casino/blackjack" element={<Blackjack />} />
             <Route path="/casino/rocket" element={<Rocket />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

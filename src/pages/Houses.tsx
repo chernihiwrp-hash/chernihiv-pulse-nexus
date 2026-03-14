@@ -6,10 +6,10 @@ import { Home, Building } from "lucide-react";
 export const housesData = [
   { id: 1, name: "Concrete Space", price: 150000, desc: "Мінімалістична квартира в центрі", category: "Люкс", owner: null, photos: ["🏢", "🛋️", "🪟", "🚿", "🅿️"] },
   { id: 2, name: "Green Villa", price: 250000, desc: "Приватний будинок з гаражем та садом", category: "Люкс", owner: null, photos: ["🏡", "🌳", "🚗", "🏊", "🌅"] },
-  { id: 3, name: "Sky Penthouse", price: 500000, desc: "Розкішний вид на місто з тераси", category: "Люкс", owner: null, photos: ["🏙️", "🌃", "🛁", "🍷", "🌆"] },
+  { id: 3, name: "Sky Penthouse", price: 500000, desc: "Розкішний вид на місто з тераси", category: "Люкс", owner: "Player_01", photos: ["🏙️", "🌃", "🛁", "🍷", "🌆"] },
   { id: 4, name: "Country House", price: 100000, desc: "Тихе місце за містом, великий сад", category: "Економ", owner: null, photos: ["🏕️", "🌾", "🐕", "🌻", "🏠"] },
   { id: 5, name: "Studio Flat", price: 80000, desc: "Компактна студія на П'ятницькій", category: "Економ", owner: null, photos: ["🏠", "📺", "🛏️", "🍳", "🪴"] },
-  { id: 6, name: "River Cottage", price: 350000, desc: "Просторний котедж біля річки", category: "Люкс", owner: null, photos: ["🏘️", "🌊", "🎣", "🌲", "🔥"] },
+  { id: 6, name: "River Cottage", price: 350000, desc: "Просторний котедж біля річки", category: "Люкс", owner: "Player_02", photos: ["🏘️", "🌊", "🎣", "🌲", "🔥"] },
 ];
 
 const Houses = () => {
@@ -41,43 +41,55 @@ const Houses = () => {
       </div>
 
       <div className="space-y-3">
-        {housesData.map((h, i) => (
-          <div key={h.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
-            <NeonCard glowColor="yellow" onClick={() => navigate(`/houses/${h.id}`)}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl bg-neon-yellow/10 border border-neon-yellow/15 flex items-center justify-center">
-                  {h.category === "Люкс" ? <Building className="w-6 h-6 text-neon-yellow" /> : <Home className="w-6 h-6 text-neon-yellow" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-foreground">{h.name}</h3>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-md font-medium ${
-                      h.category === "Люкс"
-                        ? "bg-neon-yellow/12 text-neon-yellow border border-neon-yellow/15"
-                        : "bg-primary/12 text-primary border border-primary/15"
-                    }`}>
-                      {h.category}
-                    </span>
+        {housesData.map((h, i) => {
+          const isSold = !!h.owner;
+          return (
+            <div key={h.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
+              <NeonCard glowColor="yellow" onClick={() => navigate(`/houses/${h.id}`)}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-neon-yellow/10 border border-neon-yellow/15 flex items-center justify-center">
+                    {h.category === "Люкс" ? <Building className="w-6 h-6 text-neon-yellow" /> : <Home className="w-6 h-6 text-neon-yellow" />}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{h.desc}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-                {h.photos.map((p, j) => (
-                  <div key={j} className="w-12 h-12 rounded-lg liquid-glass flex items-center justify-center text-lg shrink-0">
-                    {p}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">{h.name}</h3>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold ${
+                        isSold
+                          ? "bg-destructive/15 text-destructive border border-destructive/20"
+                          : "bg-primary/15 text-primary border border-primary/20"
+                      }`}>
+                        {isSold ? "ПРОДАНО" : "ВІЛЬНО"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{h.desc}</p>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-neon-yellow font-bold text-sm">{h.price.toLocaleString()}$</span>
-                <span className="text-[9px] text-muted-foreground">{h.owner ? "Зайнято" : "Вільно"}</span>
-              </div>
-            </NeonCard>
-          </div>
-        ))}
+                <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                  {h.photos.map((p, j) => (
+                    <div key={j} className="w-12 h-12 rounded-lg liquid-glass flex items-center justify-center text-lg shrink-0">{p}</div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span
+                    className="font-bold text-sm px-3 py-1 rounded-lg"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(45 100% 55% / 0.15), hsl(30 100% 55% / 0.08))",
+                      color: "hsl(45, 100%, 55%)",
+                      border: "1px solid hsl(45 100% 55% / 0.2)",
+                    }}
+                  >
+                    {h.price.toLocaleString()} CR
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md ${h.category === "Люкс" ? "bg-neon-yellow/10 text-neon-yellow" : "bg-primary/10 text-primary"}`}>
+                    {h.category}
+                  </span>
+                </div>
+              </NeonCard>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
