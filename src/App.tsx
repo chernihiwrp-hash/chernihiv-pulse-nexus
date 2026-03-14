@@ -56,6 +56,7 @@ const App = () => (
             <Route path="/casino/blackjack" element={<Blackjack />} />
             <Route path="/casino/rocket" element={<Rocket />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
