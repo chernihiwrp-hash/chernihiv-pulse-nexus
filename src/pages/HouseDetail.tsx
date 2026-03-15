@@ -3,12 +3,12 @@ import { useState } from "react";
 import PageHeader from "../components/PageHeader";
 import GradientButton from "../components/GradientButton";
 import { MapPin, Ruler, ChevronLeft, ChevronRight } from "lucide-react";
-import { housesData } from "./Houses";
+import { store } from "../lib/store";
 import { toast } from "sonner";
 
 const HouseDetail = () => {
   const { id } = useParams();
-  const house = housesData.find(h => h.id === Number(id));
+  const house = store.getHouses().find(h => h.id === Number(id));
   const [photoIdx, setPhotoIdx] = useState(0);
 
   if (!house) {
@@ -29,7 +29,11 @@ const HouseDetail = () => {
       <div className="animate-fade-in">
         {/* Photo carousel */}
         <div className="relative w-full h-52 rounded-2xl liquid-glass-card border-neon-yellow/15 flex items-center justify-center mb-2 overflow-hidden">
-          <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
+          {photos[photoIdx]?.startsWith("data:") ? (
+            <img src={photos[photoIdx]} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent pointer-events-none" />
           {photos.length > 1 && (
             <>

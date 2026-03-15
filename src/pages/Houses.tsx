@@ -1,28 +1,21 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import NeonCard from "../components/NeonCard";
 import { Home, Building } from "lucide-react";
-
-export const housesData = [
-  { id: 1, name: "Concrete Space", price: 150000, desc: "Мінімалістична квартира в центрі", category: "Люкс", owner: null, photos: ["🏢", "🛋️", "🪟", "🚿", "🅿️"] },
-  { id: 2, name: "Green Villa", price: 250000, desc: "Приватний будинок з гаражем та садом", category: "Люкс", owner: null, photos: ["🏡", "🌳", "🚗", "🏊", "🌅"] },
-  { id: 3, name: "Sky Penthouse", price: 500000, desc: "Розкішний вид на місто з тераси", category: "Люкс", owner: "Player_01", photos: ["🏙️", "🌃", "🛁", "🍷", "🌆"] },
-  { id: 4, name: "Country House", price: 100000, desc: "Тихе місце за містом, великий сад", category: "Економ", owner: null, photos: ["🏕️", "🌾", "🐕", "🌻", "🏠"] },
-  { id: 5, name: "Studio Flat", price: 80000, desc: "Компактна студія на П'ятницькій", category: "Економ", owner: null, photos: ["🏠", "📺", "🛏️", "🍳", "🪴"] },
-  { id: 6, name: "River Cottage", price: 350000, desc: "Просторний котедж біля річки", category: "Люкс", owner: "Player_02", photos: ["🏘️", "🌊", "🎣", "🌲", "🔥"] },
-];
+import { store } from "../lib/store";
 
 const Houses = () => {
   const navigate = useNavigate();
-  const total = housesData.length;
-  const free = housesData.filter(h => !h.owner).length;
+  const [houses] = useState(store.getHouses());
+  const total = houses.length;
+  const free = houses.filter(h => !h.owner).length;
   const sold = total - free;
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
       <PageHeader title="БУДИНКИ" subtitle="Нерухомість міста" backTo="/" />
 
-      {/* Counter */}
       <div className="liquid-glass-card rounded-2xl p-3 mb-4 flex items-center justify-around animate-fade-in">
         <div className="text-center">
           <span className="text-lg font-bold text-foreground">{total}</span>
@@ -41,8 +34,9 @@ const Houses = () => {
       </div>
 
       <div className="space-y-3">
-        {housesData.map((h, i) => {
+        {houses.map((h, i) => {
           const isSold = !!h.owner;
+          const realPhotos = h.photos.filter(p => p.startsWith("data:"));
           return (
             <div key={h.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
               <NeonCard glowColor="yellow" onClick={() => navigate(`/houses/${h.id}`)}>
@@ -54,9 +48,7 @@ const Houses = () => {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-foreground">{h.name}</h3>
                       <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold ${
-                        isSold
-                          ? "bg-destructive/15 text-destructive border border-destructive/20"
-                          : "bg-primary/15 text-primary border border-primary/20"
+                        isSold ? "bg-destructive/15 text-destructive border border-destructive/20" : "bg-primary/15 text-primary border border-primary/20"
                       }`}>
                         {isSold ? "ПРОДАНО" : "ВІЛЬНО"}
                       </span>
@@ -65,11 +57,20 @@ const Houses = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-                  {h.photos.map((p, j) => (
-                    <div key={j} className="w-12 h-12 rounded-lg liquid-glass flex items-center justify-center text-lg shrink-0">{p}</div>
-                  ))}
-                </div>
+                {realPhotos.length > 0 && (
+                  <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                    {realPhotos.map((p, j) => (
+                      <img key={j} src={p} alt="" className="w-16 h-16 object-cover rounded-lg shrink-0" />
+                    ))}
+                  </div>
+                )}
+                {realPhotos.length === 0 && (
+                  <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                    {h.photos.map((p, j) => (
+                      <div key={j} className="w-12 h-12 rounded-lg liquid-glass flex items-center justify-center text-lg shrink-0">{p}</div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <span
