@@ -29,7 +29,11 @@ const HouseDetail = () => {
       <div className="animate-fade-in">
         {/* Photo carousel */}
         <div className="relative w-full h-52 rounded-2xl liquid-glass-card border-neon-yellow/15 flex items-center justify-center mb-2 overflow-hidden">
-          <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
+          {photos[photoIdx]?.startsWith("data:") ? (
+            <img src={photos[photoIdx]} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-6xl">{photos[photoIdx] || "🏠"}</span>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent pointer-events-none" />
           {photos.length > 1 && (
             <>
