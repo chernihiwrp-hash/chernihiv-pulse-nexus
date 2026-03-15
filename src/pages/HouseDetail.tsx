@@ -3,12 +3,12 @@ import { useState } from "react";
 import PageHeader from "../components/PageHeader";
 import GradientButton from "../components/GradientButton";
 import { MapPin, Ruler, ChevronLeft, ChevronRight } from "lucide-react";
-import { housesData } from "./Houses";
+import { store } from "../lib/store";
 import { toast } from "sonner";
 
 const HouseDetail = () => {
   const { id } = useParams();
-  const house = housesData.find(h => h.id === Number(id));
+  const house = store.getHouses().find(h => h.id === Number(id));
   const [photoIdx, setPhotoIdx] = useState(0);
 
   if (!house) {
