@@ -4,29 +4,23 @@ import GradientButton from "../components/GradientButton";
 import NeonCard from "../components/NeonCard";
 import { Car, Search } from "lucide-react";
 import { toast } from "sonner";
-
-type CarRecord = { plate: string; model: string; owner: string };
-
-const initialCars: CarRecord[] = [
-  { plate: "AA 1234 BB", model: "BMW M5", owner: "Player_01" },
-  { plate: "CC 5678 DD", model: "Audi RS6", owner: "Player_02" },
-  { plate: "EE 9012 FF", model: "Mercedes S63", owner: "Player_03" },
-];
+import { store } from "../lib/store";
 
 const CarRegistration = () => {
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [cars, setCars] = useState(initialCars);
+  const [cars, setCars] = useState(store.getCars());
   const [search, setSearch] = useState("");
 
   const filtered = cars.filter(c => c.plate.toLowerCase().includes(search.toLowerCase()) || c.model.toLowerCase().includes(search.toLowerCase()));
 
   const register = () => {
     if (!plate || !model) return toast.error("Заповніть усі поля");
-    setCars(prev => [{ plate, model, owner: "Ви" }, ...prev]);
+    const updated = [{ plate, model, owner: "Ви" }, ...cars];
+    setCars(updated);
+    store.setCars(updated);
     toast.success("Номер зареєстровано!");
-    setPlate("");
-    setModel("");
+    setPlate(""); setModel("");
   };
 
   return (
@@ -42,8 +36,8 @@ const CarRegistration = () => {
           <div className="space-y-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Номерний знак</label>
-              <input value={plate} onChange={e => setPlate(e.target.value)} placeholder="AA 0000 AA"
-                className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-yellow/30 bg-transparent" />
+              <input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="AA 0000 AA"
+                className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-yellow/30 bg-transparent font-mono" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Модель авто</label>
@@ -53,18 +47,14 @@ const CarRegistration = () => {
           </div>
         </NeonCard>
 
-        <GradientButton variant="yellow" className="w-full" onClick={register}>
-          Зареєструвати
-        </GradientButton>
+        <GradientButton variant="yellow" className="w-full" onClick={register}>Зареєструвати</GradientButton>
 
-        {/* Search */}
         <div className="liquid-glass-card rounded-2xl p-3 flex items-center gap-3">
           <Search className="w-4 h-4 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Пошук за номером або моделлю..."
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none" />
         </div>
 
-        {/* Table */}
         <div className="liquid-glass-card rounded-2xl overflow-hidden">
           <div className="grid grid-cols-3 gap-2 px-4 py-2 border-b border-border">
             <span className="text-[10px] text-muted-foreground font-semibold">НОМЕР</span>
@@ -78,9 +68,7 @@ const CarRegistration = () => {
               <span className="text-xs text-muted-foreground">{c.owner}</span>
             </div>
           ))}
-          {filtered.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground py-4">Нічого не знайдено</p>
-          )}
+          {filtered.length === 0 && <p className="text-center text-xs text-muted-foreground py-4">Нічого не знайдено</p>}
         </div>
       </div>
     </div>

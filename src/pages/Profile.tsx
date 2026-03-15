@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { User, Briefcase, Home, Car, FileCheck, Wallet, Shield, Lock } from "lucide-react";
+import { User, Briefcase, Home, Car, FileCheck, Wallet, Shield, Lock, Bell } from "lucide-react";
 import GradientButton from "../components/GradientButton";
 import { useNavigate } from "react-router-dom";
 import passportBg from "../assets/passport-bg.jpg";
 import { toast } from "sonner";
+import { store } from "../lib/store";
 
 const Profile = () => {
   const navigate = useNavigate();
   const [showAdminInput, setShowAdminInput] = useState(false);
   const [adminCode, setAdminCode] = useState("");
+  const notifications = store.getNotifications();
+  const unread = notifications.filter(n => !n.read).length;
 
   const handleAdminAccess = () => {
-    if (adminCode === "5319io") {
+    if (adminCode === "5319son") {
       navigate("/admin-panel");
       toast.success("Доступ до адмін-панелі відкрито");
     } else {
@@ -19,6 +22,11 @@ const Profile = () => {
     }
     setAdminCode("");
     setShowAdminInput(false);
+  };
+
+  const markRead = () => {
+    const all = store.getNotifications().map(n => ({ ...n, read: true }));
+    store.setNotifications(all);
   };
 
   return (
@@ -66,8 +74,26 @@ const Profile = () => {
 
           {/* Notifications */}
           <div className="mt-4 liquid-glass rounded-xl p-3">
-            <span className="text-[10px] text-muted-foreground">Сповіщення</span>
-            <p className="text-xs text-foreground mt-1">Немає нових сповіщень</p>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[10px] text-muted-foreground">Сповіщення</span>
+                {unread > 0 && <span className="text-[8px] bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">{unread}</span>}
+              </div>
+              {unread > 0 && <button onClick={markRead} className="text-[9px] text-primary">Прочитати</button>}
+            </div>
+            {notifications.length === 0 ? (
+              <p className="text-xs text-foreground mt-1">Немає нових сповіщень</p>
+            ) : (
+              <div className="space-y-1.5 mt-2 max-h-32 overflow-y-auto">
+                {notifications.slice(0, 5).map(n => (
+                  <div key={n.id} className={`text-[10px] p-2 rounded-lg ${n.read ? "text-muted-foreground" : "text-foreground bg-primary/5 border border-primary/10"}`}>
+                    <p>{n.text}</p>
+                    <span className="text-[8px] text-muted-foreground">{n.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -103,24 +129,41 @@ const Profile = () => {
       </div>
 
       {/* Hidden admin access */}
-      <div className="mt-8 flex justify-center">
-        {showAdminInput ? (
-          <div className="flex gap-2 items-center animate-fade-in">
-            <input
-              value={adminCode}
-              onChange={e => setAdminCode(e.target.value)}
-              placeholder="Код доступу"
-              type="password"
-              className="liquid-glass rounded-xl px-3 py-2 text-xs text-foreground w-32 focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent"
-              onKeyDown={e => e.key === "Enter" && handleAdminAccess()}
-            />
-            <button onClick={handleAdminAccess} className="text-xs text-primary">→</button>
-          </div>
-        ) : (
-          <button onClick={() => setShowAdminInput(true)} className="text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors">
-            <Lock className="w-3.5 h-3.5" />
-          </button>
-        )}
+      <div className="mt-8">
+        <div
+          className="rounded-2xl p-4 border transition-all"
+          style={{
+            background: "linear-gradient(135deg, hsl(84 81% 44% / 0.05), hsl(0 0% 100% / 0.02))",
+            borderColor: showAdminInput ? "hsl(84 81% 44% / 0.3)" : "hsl(0 0% 100% / 0.06)",
+          }}
+        >
+          {showAdminInput ? (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold text-foreground">Вхід в адмін панель</span>
+              </div>
+              <input
+                value={adminCode}
+                onChange={e => setAdminCode(e.target.value)}
+                placeholder="Код доступу"
+                type="password"
+                className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent"
+                onKeyDown={e => e.key === "Enter" && handleAdminAccess()}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <GradientButton variant="green" className="flex-1 text-xs py-2" onClick={handleAdminAccess}>Увійти</GradientButton>
+                <button onClick={() => { setShowAdminInput(false); setAdminCode(""); }} className="liquid-glass rounded-xl px-4 py-2 text-xs text-muted-foreground">Скасувати</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowAdminInput(true)} className="w-full flex items-center justify-center gap-2 text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors py-1">
+              <Lock className="w-3.5 h-3.5" />
+              <span className="text-[10px]">Адміністрація</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
