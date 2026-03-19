@@ -7,13 +7,13 @@ import { toast } from "sonner";
 import { store } from "../lib/store";
 
 const factionsData: Record<string, { name: string; color: string; gradient: string; desc: string; dangerous?: boolean; members: { name: string; rank: string }[] }> = {
-  sbu: { name: "СБУ", color: "hsl(220, 70%, 35%)", gradient: "linear-gradient(135deg, hsl(220,70%,35%,0.2), hsl(220,70%,15%,0.08))", desc: "Служба безпеки України", members: [{ name: "Agent_01", rank: "Капітан" }, { name: "Agent_02", rank: "Лейтенант" }] },
+  sbu: { name: "СБУ", color: "hsl(220, 70%, 35%)", gradient: "linear-gradient(135deg, hsl(220,70%,35%,0.2), hsl(220,70%,15%,0.08))", desc: "Служба безпеки України", members: [{ name: "Agent_01", rank: "Капітан" }] },
   dbr: { name: "ДБР", color: "hsl(160, 50%, 35%)", gradient: "linear-gradient(135deg, hsl(160,50%,35%,0.2), hsl(160,50%,15%,0.08))", desc: "Державне бюро розслідувань", members: [{ name: "Inspector_01", rank: "Слідчий" }] },
   npu: { name: "НПУ", color: "hsl(210, 80%, 45%)", gradient: "linear-gradient(135deg, hsl(210,80%,45%,0.2), hsl(210,80%,20%,0.08))", desc: "Національна поліція України", members: [{ name: "Officer_01", rank: "Сержант" }, { name: "Officer_02", rank: "Патрульний" }] },
   vsu: { name: "ВСУ", color: "hsl(140, 50%, 30%)", gradient: "linear-gradient(135deg, hsl(140,50%,30%,0.2), hsl(100,40%,20%,0.08))", desc: "Збройні Сили України", members: [{ name: "Soldier_01", rank: "Рядовий" }] },
   prosecutor: { name: "Прокуратура", color: "hsl(30, 50%, 35%)", gradient: "linear-gradient(135deg, hsl(30,50%,35%,0.2), hsl(220,10%,30%,0.08))", desc: "Нагляд за дотриманням законів", members: [{ name: "Prosecutor_01", rank: "Прокурор" }] },
   dsns: { name: "ДСНС", color: "hsl(15, 80%, 50%)", gradient: "linear-gradient(135deg, hsl(15,80%,45%,0.2), hsl(15,60%,20%,0.08))", desc: "Служба з надзвичайних ситуацій", members: [{ name: "Rescue_01", rank: "Рятувальник" }] },
-  judge: { name: "Суддя", color: "hsl(45, 80%, 50%)", gradient: "linear-gradient(135deg, hsl(45,80%,50%,0.2), hsl(40,70%,25%,0.08))", desc: "Судова система — правосуддя", members: [{ name: "Judge_01", rank: "Суддя" }] },
+  judge: { name: "Суддя", color: "hsl(45, 80%, 50%)", gradient: "linear-gradient(135deg, hsl(45,80%,50%,0.2), hsl(40,70%,25%,0.08))", desc: "Судова система", members: [{ name: "Judge_01", rank: "Суддя" }] },
   lawyers: { name: "Адвокати", color: "hsl(25, 80%, 50%)", gradient: "linear-gradient(135deg, hsl(25,80%,50%,0.2), hsl(20,70%,25%,0.08))", desc: "Захист прав та інтересів", members: [{ name: "Lawyer_01", rank: "Адвокат" }] },
   orion: { name: "ОРІОН", color: "hsl(0, 55%, 35%)", gradient: "linear-gradient(135deg, hsl(0,55%,25%,0.35), hsl(0,0%,4%,0.45))", desc: "Приватна військова компанія", dangerous: true, members: [{ name: "Merc_01", rank: "Бойовик" }] },
   ghetto: { name: "ГЕТТО", color: "hsl(0, 60%, 35%)", gradient: "linear-gradient(135deg, hsl(0,60%,20%,0.4), hsl(0,0%,3%,0.5))", desc: "Вуличне угруповання", dangerous: true, members: [{ name: "Gangster_01", rank: "Член банди" }] },
@@ -30,33 +30,18 @@ const FactionDetail = () => {
   const [telegram, setTelegram] = useState("");
   const [experience, setExperience] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (!faction) {
-    return <div className="min-h-screen bg-background pb-20 px-4 pt-4"><PageHeader title="НЕ ЗНАЙДЕНО" backTo="/factions" /></div>;
-  }
+  if (!faction) return <div className="min-h-screen bg-background pb-20 px-4 pt-4"><PageHeader title="НЕ ЗНАЙДЕНО" backTo="/factions" /></div>;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!nick || !roblox || !age || !telegram || !message) return toast.error("Заповніть усі поля");
-    
-    // Save to store
-    const apps = store.getFactionApps();
-    apps.unshift({
-      id: Date.now(),
-      factionId: id || "",
-      factionName: faction.name,
-      nick, roblox, age, telegram, experience, message,
-      status: "review",
-      date: new Date().toLocaleDateString("uk-UA"),
-    });
-    store.setFactionApps(apps);
-
-    // Update pulse
-    const pulse = store.getPulse();
-    store.setPulse({ ...pulse, factions: pulse.factions + 1 });
-
-    toast.success(`Анкету у ${faction.name} відправлено! Статус: На розгляді`);
+    setLoading(true);
+    await store.submitFactionApp({ factionId: id || "", factionName: faction.name, nick, roblox, age, telegram, experience, message });
+    toast.success(`Анкету у ${faction.name} відправлено! Очікуйте рішення адміністрації.`);
     setShowForm(false);
     setNick(""); setRoblox(""); setAge(""); setTelegram(""); setExperience(""); setMessage("");
+    setLoading(false);
   };
 
   const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors bg-transparent";
@@ -65,7 +50,6 @@ const FactionDetail = () => {
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
       <PageHeader title={faction.name} subtitle={faction.desc} backTo="/factions" />
-
       <div className="animate-fade-in">
         <div className="rounded-2xl p-5 mb-4 border" style={{ background: faction.gradient, borderColor: faction.color + "22" }}>
           <div className="flex items-center gap-4">
@@ -75,16 +59,14 @@ const FactionDetail = () => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-foreground">{faction.name}</h2>
-              <p className="text-xs text-muted-foreground mt-1">Учасників: {faction.members.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">{faction.desc}</p>
+              <p className="text-xs text-muted-foreground">Учасників: {faction.members.length}</p>
             </div>
           </div>
         </div>
 
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Учасники</span>
-          </div>
+          <div className="flex items-center gap-2 mb-3"><Users className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium text-foreground">Учасники</span></div>
           <div className="space-y-2">
             {faction.members.map((m, i) => (
               <div key={i} className="liquid-glass rounded-xl p-3 flex items-center gap-3 animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
@@ -119,11 +101,12 @@ const FactionDetail = () => {
             ))}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Чому хочете вступити?</label>
-              <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Розкажіть про себе..."
-                className={`${inputClass} resize-none h-28`} />
+              <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Розкажіть про себе..." className={`${inputClass} resize-none h-28`} />
             </div>
             <div className="flex gap-2">
-              <GradientButton variant={btnVariant} className="flex-1" onClick={handleSubmit}>Відправити анкету</GradientButton>
+              <GradientButton variant={btnVariant} className="flex-1" onClick={handleSubmit} disabled={loading}>
+                {loading ? "Відправляю..." : "Відправити анкету"}
+              </GradientButton>
               <button onClick={() => setShowForm(false)} className="liquid-glass rounded-2xl px-4 py-3 text-sm text-muted-foreground active:scale-95">Скасувати</button>
             </div>
           </div>
