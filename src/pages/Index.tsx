@@ -1,4 +1,4 @@
-import { Newspaper, FileText, Home, Vote, ScrollText, Megaphone, Search, Car, UserPlus, AlertTriangle, X } from "lucide-react";
+import { Newspaper, FileText, Home, Vote, ScrollText, Megaphone, Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonCard from "../components/NeonCard";
@@ -14,36 +14,44 @@ const menuItems = [
   { icon: Vote, label: "Вибори мера", desc: "Голосування", path: "/mayor-election" },
   { icon: ScrollText, label: "Документи", desc: "Офіційні папери", path: "/documents" },
   { icon: Megaphone, label: "Голос міста", desc: "Скарги та ідеї", path: "/city-voice" },
-  { icon: Search, label: "Розшук", desc: "Список розшуку", path: "/wanted" },
+  { icon: Search, label: "Розшук", desc: "Список розшуку", path: "/wanted", red: true },
   { icon: Car, label: "Номери авто", desc: "Реєстрація", path: "/car-registration" },
 ];
 
-const sosReasons = ["Читер", "Рейд", "Масове порушення", "Інше"];
+const sosTypes = [
+  { id: "police", icon: "🚔", label: "Поліція" },
+  { id: "medic", icon: "🚑", label: "Медики" },
+  { id: "fire", icon: "🚒", label: "Пожежні" },
+  { id: "general", icon: "🆘", label: "Загальний" },
+];
+
+const SERVER_CODE = "5319vick";
 
 const Index = () => {
   const navigate = useNavigate();
   const [showSos, setShowSos] = useState(false);
-  const [sosReason, setSosReason] = useState("");
+  const [sosType, setSosType] = useState("general");
   const [sosDesc, setSosDesc] = useState("");
+  const [sosNick, setSosNick] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  const handleSos = () => {
-    if (!sosReason) return toast.error("Оберіть причину");
+  const handleSos = async () => {
     if (!sosDesc.trim()) return toast.error("Опишіть ситуацію");
-
-    // Save SOS to store for admin panel
-    const sos = store.getSos();
-    sos.unshift({ id: Date.now(), reason: sosReason, description: sosDesc, date: new Date().toLocaleString("uk-UA") });
-    store.setSos(sos);
-
+    await store.addSos(sosNick || "Гравець", sosType, sosDesc, sosType as "police" | "medic" | "fire" | "general");
     toast.success("🚨 SOS сигнал відправлено!");
-    setShowSos(false);
-    setSosReason("");
-    setSosDesc("");
+    setShowSos(false); setSosDesc(""); setSosNick("");
+  };
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(SERVER_CODE);
+    setCopied(true);
+    toast.success("Код скопійовано!");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">CHERNIHIV RP</h1>
           <p className="text-xs text-muted-foreground mt-0.5">ПОРТАЛ</p>
@@ -57,28 +65,51 @@ const Index = () => {
         </button>
       </div>
 
+      {/* Play button + server code */}
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={() => toast.info("Запускай Roblox і вводь код сервера!")}
+          className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all active:scale-95"
+          style={{ background: "linear-gradient(135deg, hsl(142, 71%, 45%), hsl(142, 71%, 25%))", boxShadow: "0 0 20px hsl(142 71% 45% / 0.4)" }}>
+          <Gamepad2 className="w-5 h-5 text-white" />
+          ГРАТИ
+        </button>
+        <div className="flex-1 liquid-glass rounded-2xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[9px] text-muted-foreground">КОД СЕРВЕРУ</p>
+            <p className="text-sm font-mono font-bold text-primary">{SERVER_CODE}</p>
+          </div>
+          <button onClick={copyCode} className="p-1.5 rounded-lg liquid-glass active:scale-95 transition-all">
+            {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+          </button>
+        </div>
+      </div>
+
+      {/* SOS Modal */}
       {showSos && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowSos(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in" onClick={e => e.stopPropagation()}
             style={{ background: "linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 5%))", border: "1px solid hsl(0 70% 50% / 0.3)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.2)" }}>
-            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground"><X className="w-5 h-5" /></button>
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-5 h-5 text-destructive" />
               <h3 className="font-display text-sm font-bold text-destructive">SOS СИГНАЛ</h3>
             </div>
-            <label className="text-xs text-muted-foreground mb-2 block">Причина:</label>
+            <label className="text-xs text-muted-foreground mb-2 block">Ваш нік:</label>
+            <input value={sosNick} onChange={e => setSosNick(e.target.value)} placeholder="Нік в грі"
+              className="w-full liquid-glass rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none bg-transparent mb-3" />
+            <label className="text-xs text-muted-foreground mb-2 block">Тип сигналу:</label>
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {sosReasons.map(r => (
-                <button key={r} onClick={() => setSosReason(r)}
-                  className={`text-xs px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${sosReason === r ? "bg-destructive/20 border-destructive/40 text-destructive" : "liquid-glass text-muted-foreground"}`}>
-                  {r}
+              {sosTypes.map(t => (
+                <button key={t.id} onClick={() => setSosType(t.id)}
+                  className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${sosType === t.id ? "bg-destructive/20 border-destructive/40 text-destructive" : "liquid-glass text-muted-foreground"}`}>
+                  <span className="text-base">{t.icon}</span> {t.label}
                 </button>
               ))}
             </div>
             <label className="text-xs text-muted-foreground mb-2 block">Опис ситуації:</label>
             <textarea value={sosDesc} onChange={e => setSosDesc(e.target.value)} placeholder="Опишіть що сталося..."
-              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/40 resize-none h-24 bg-transparent mb-4" />
+              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none resize-none h-20 bg-transparent mb-4" />
             <GradientButton variant="danger" className="w-full" onClick={handleSos}>🚨 Відправити SOS</GradientButton>
           </div>
         </div>
@@ -89,9 +120,9 @@ const Index = () => {
       <div className="grid grid-cols-2 gap-3">
         {menuItems.map((item, i) => (
           <div key={item.label} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
-            <NeonCard glowColor="lime" onClick={() => navigate(item.path)}>
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-3">
-                <item.icon className="w-5 h-5 text-primary" />
+            <NeonCard glowColor={item.red ? "red" : "lime"} onClick={() => navigate(item.path)}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/15"}`}>
+                <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
               </div>
               <h3 className="text-sm font-semibold text-foreground">{item.label}</h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
