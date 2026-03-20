@@ -244,12 +244,7 @@ export const store = {
         message: app.message,
       },
     });
-    if (error) {
-      console.error("submitFactionApp ERROR:", JSON.stringify(error, null, 2));
-      alert("Помилка Supabase: " + error.message + "\nCode: " + error.code + "\nDetails: " + error.details);
-    } else {
-      console.log("submitFactionApp OK");
-    }
+    if (error) console.error("submitFactionApp error:", error);
     return !error;
   },
   updateFactionAppStatus: async (id: number, status: "approved" | "rejected") => {
@@ -300,13 +295,8 @@ export const store = {
     });
   },
   submitAdminApp: async (app: Omit<AdminApplication, "id" | "status" | "date">) => {
-    const { data, error } = await supabase.from("admin_applications").insert({ username: app.nick, status: "pending", form_data: app }).select();
-    if (error) {
-      console.error("submitAdminApp ERROR:", JSON.stringify(error, null, 2));
-      alert("Помилка Supabase: " + error.message + "\nCode: " + error.code + "\nDetails: " + error.details);
-    } else {
-      console.log("submitAdminApp OK:", data);
-    }
+    const { error } = await supabase.from("admin_applications").insert({ username: app.nick, status: "pending", form_data: app });
+    if (error) console.error("submitAdminApp error:", error);
     return !error;
   },
   updateAdminAppStatus: async (id: number, status: "approved" | "rejected") => {
@@ -421,7 +411,7 @@ export const store = {
   // ── TOKENS / BALANCE ──────────────────────────────────────────────────────
   giveTokens: async (nick: string, amount: number): Promise<boolean> => {
     addBalance(nick, amount);
-    store.addNotification(`Вам нараховано ${amount} CR від адміністрації!`);
+    await store.addNotification(nick, `Вам нараховано ${amount} CR від адміністрації!`);
     // Спроба записати в Supabase якщо є поле balance
     await supabase.from("users").update({ balance: getBalance(nick) }).eq("username", nick).maybeSingle();
     return true;
@@ -429,20 +419,38 @@ export const store = {
   takeTokens: async (nick: string, amount: number): Promise<boolean> => {
     const ok = subtractBalance(nick, amount);
     if (ok) {
-      store.addNotification(`У вас знято ${amount} CR адміністрацією.`);
+      await store.addNotification(nick, `У вас знято ${amount} CR адміністрацією.`);
       await supabase.from("users").update({ balance: getBalance(nick) }).eq("username", nick).maybeSingle();
     }
     return ok;
   },
 
   // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
-  getNotifications: (): Notification[] => _getNotifs(),
-  setNotifications: (items: Notification[]) => _saveNotifs(items),
-  addNotification: (text: string) => {
-    const items = _getNotifs();
-    items.unshift({ id: Date.now(), text, date: new Date().toLocaleDateString("uk-UA"), read: false });
-    _saveNotifs(items);
+  // Notifications — Supabase based (по username)
+  getNotifications: async (username: string): Promise<Notification[]> => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .ilike("username", username)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!data) return [];
+    return data.map((r: Record<string, unknown>) => ({
+      id: r.id as number,
+      text: r.text as string,
+      date: new Date(r.created_at as string).toLocaleDateString("uk-UA"),
+      read: r.read as boolean,
+    }));
   },
+  markNotificationsRead: async (username: string) => {
+    await supabase.from("notifications").update({ read: true }).ilike("username", username).eq("read", false);
+  },
+  addNotification: async (username: string, text: string) => {
+    await supabase.from("notifications").insert({ username, text, read: false });
+  },
+  // Legacy localStorage fallback (для зворотної сумісності)
+  getNotificationsLocal: (): Notification[] => _getNotifs(),
+  setNotifications: (items: Notification[]) => _saveNotifs(items),
 
   // ── PULSE CITY ────────────────────────────────────────────────────────────
   getPulse: async (): Promise<{ citizens: number; houses: number; factions: number }> => {
