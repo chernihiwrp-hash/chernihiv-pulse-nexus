@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useState } from "react";
 import PageHeader from "../components/PageHeader";
 import GradientButton from "../components/GradientButton";
-import { Users, User, Send } from "lucide-react";
+import { Users, User, Send, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { store } from "../lib/store";
 
@@ -20,6 +20,8 @@ const factionsData: Record<string, { name: string; color: string; gradient: stri
   mafia: { name: "МАФІЯ", color: "hsl(0, 65%, 40%)", gradient: "linear-gradient(135deg, hsl(0,65%,25%,0.35), hsl(0,0%,5%,0.4))", desc: "Організована злочинність", dangerous: true, members: [{ name: "Don_01", rank: "Капо" }] },
 };
 
+type AppStatus = "idle" | "sending" | "sent";
+
 const FactionDetail = () => {
   const { id } = useParams();
   const faction = factionsData[id || ""];
@@ -30,18 +32,25 @@ const FactionDetail = () => {
   const [telegram, setTelegram] = useState("");
   const [experience, setExperience] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [appStatus, setAppStatus] = useState<AppStatus>("idle");
 
-  if (!faction) return <div className="min-h-screen bg-background pb-20 px-4 pt-4"><PageHeader title="НЕ ЗНАЙДЕНО" backTo="/factions" /></div>;
+  if (!faction) return (
+    <div className="min-h-screen bg-background pb-20 px-4 pt-4">
+      <PageHeader title="НЕ ЗНАЙДЕНО" backTo="/factions" />
+    </div>
+  );
 
   const handleSubmit = async () => {
     if (!nick || !roblox || !age || !telegram || !message) return toast.error("Заповніть усі поля");
-    setLoading(true);
+    setAppStatus("sending");
     await store.submitFactionApp({ factionId: id || "", factionName: faction.name, nick, roblox, age, telegram, experience, message });
-    toast.success(`Анкету у ${faction.name} відправлено! Очікуйте рішення адміністрації.`);
-    setShowForm(false);
-    setNick(""); setRoblox(""); setAge(""); setTelegram(""); setExperience(""); setMessage("");
-    setLoading(false);
+    setAppStatus("sent");
+    // Скидаємо форму через 3 секунди
+    setTimeout(() => {
+      setShowForm(false);
+      setAppStatus("idle");
+      setNick(""); setRoblox(""); setAge(""); setTelegram(""); setExperience(""); setMessage("");
+    }, 3000);
   };
 
   const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors bg-transparent";
@@ -51,6 +60,7 @@ const FactionDetail = () => {
     <div className="min-h-screen bg-background pb-20 px-4 pt-4">
       <PageHeader title={faction.name} subtitle={faction.desc} backTo="/factions" />
       <div className="animate-fade-in">
+        {/* Banner */}
         <div className="rounded-2xl p-5 mb-4 border" style={{ background: faction.gradient, borderColor: faction.color + "22" }}>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold"
@@ -65,8 +75,12 @@ const FactionDetail = () => {
           </div>
         </div>
 
+        {/* Members */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3"><Users className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium text-foreground">Учасники</span></div>
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Учасники</span>
+          </div>
           <div className="space-y-2">
             {faction.members.map((m, i) => (
               <div key={i} className="liquid-glass rounded-xl p-3 flex items-center gap-3 animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
@@ -82,7 +96,22 @@ const FactionDetail = () => {
           </div>
         </div>
 
-        {showForm ? (
+        {/* Якщо анкету відправлено — показуємо статус */}
+        {appStatus === "sent" && (
+          <div className="liquid-glass-card rounded-2xl p-5 mb-4 animate-fade-in border border-primary/20 text-center">
+            <CheckCircle className="w-10 h-10 text-primary mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-foreground mb-1">Анкету відправлено!</h3>
+            <p className="text-[11px] text-muted-foreground mb-2">Ваша заявка у <span style={{ color: faction.color }}>{faction.name}</span> передана адміністрації</p>
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl mx-auto w-fit"
+              style={{ background: "hsl(84 81% 44% / 0.1)", border: "1px solid hsl(84 81% 44% / 0.2)" }}>
+              <Clock className="w-3 h-3 text-primary" />
+              <span className="text-[10px] text-primary">Очікуйте повідомлення в профілі</span>
+            </div>
+          </div>
+        )}
+
+        {/* Form */}
+        {showForm && appStatus !== "sent" ? (
           <div className="liquid-glass-strong rounded-2xl p-4 space-y-3 animate-fade-in" style={{ borderColor: faction.color + "22" }}>
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Send className="w-4 h-4" style={{ color: faction.color }} /> Анкета у {faction.name}
@@ -101,17 +130,24 @@ const FactionDetail = () => {
             ))}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Чому хочете вступити?</label>
-              <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Розкажіть про себе..." className={`${inputClass} resize-none h-28`} />
+              <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Розкажіть про себе..."
+                className={`${inputClass} resize-none h-28`} />
             </div>
             <div className="flex gap-2">
-              <GradientButton variant={btnVariant} className="flex-1" onClick={handleSubmit} disabled={loading}>
-                {loading ? "Відправляю..." : "Відправити анкету"}
+              <GradientButton variant={btnVariant} className="flex-1" onClick={handleSubmit} disabled={appStatus === "sending"}>
+                <Send className="w-3.5 h-3.5 inline mr-1.5" />
+                {appStatus === "sending" ? "Відправляю..." : "Відправити анкету"}
               </GradientButton>
-              <button onClick={() => setShowForm(false)} className="liquid-glass rounded-2xl px-4 py-3 text-sm text-muted-foreground active:scale-95">Скасувати</button>
+              <button onClick={() => setShowForm(false)}
+                className="liquid-glass rounded-2xl px-4 py-3 text-sm text-muted-foreground active:scale-95">
+                Скасувати
+              </button>
             </div>
           </div>
-        ) : (
-          <GradientButton variant={btnVariant} className="w-full" onClick={() => setShowForm(true)}>Подати анкету</GradientButton>
+        ) : appStatus === "idle" && (
+          <GradientButton variant={btnVariant} className="w-full" onClick={() => setShowForm(true)}>
+            Подати анкету
+          </GradientButton>
         )}
       </div>
     </div>
