@@ -18,9 +18,8 @@ const News = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background pb-20 px-4 pt-4">
+    <div className="min-h-screen pb-20 px-4 pt-4">
       <PageHeader title="НОВИНИ" subtitle="Останні події міста" backTo="/" />
-
       {loading ? (
         <div className="text-center py-12">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
@@ -34,17 +33,13 @@ const News = () => {
               const ext = item as NewsItem & { button_data?: string };
               if (ext.button_data) btn = JSON.parse(ext.button_data);
             } catch {}
-
             const isOpen = openId === item.id;
-
             return (
               <div key={item.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
                 <NeonCard glowColor="green" onClick={() => setOpenId(isOpen ? null : item.id)}>
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.type === "update" ? "bg-blue-500/10 border border-blue-500/20" : "bg-primary/10 border border-primary/20"}`}>
-                      {item.type === "update"
-                        ? <RefreshCw className="w-5 h-5 text-blue-400" />
-                        : <Newspaper className="w-5 h-5 text-primary" />}
+                      {item.type === "update" ? <RefreshCw className="w-5 h-5 text-blue-400" /> : <Newspaper className="w-5 h-5 text-primary" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -53,36 +48,31 @@ const News = () => {
                           {item.type === "update" ? "Оновлення" : "Новина"}
                         </span>
                       </div>
-
-                      {/* Текст завжди видимий */}
-                      <p className={`text-[11px] text-muted-foreground leading-relaxed ${!isOpen ? "line-clamp-2" : ""}`}>
-                        {item.text}
-                      </p>
-
-                      {/* Розгорнутий контент */}
+                      <p className={`text-[11px] text-muted-foreground leading-relaxed ${!isOpen ? "line-clamp-2" : ""}`}>{item.text}</p>
                       {isOpen && (
                         <div className="mt-2 animate-fade-in">
                           {item.image && (
                             <img src={item.image} alt="" className="w-full h-40 object-cover rounded-xl mt-2 mb-3"
                               onError={e => (e.currentTarget.style.display = "none")} />
                           )}
-                          {btn && (
+                          {/* Кнопка — реальне посилання */}
+                          {btn && btn.url && (
+                            <div className="mt-3" onClick={e => e.stopPropagation()}>
+                              <a href={btn.url} target="_blank" rel="noopener noreferrer">
+                                <GradientButton variant={btn.variant} className="text-xs py-2 px-4 flex items-center gap-1.5">
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  {btn.text}
+                                </GradientButton>
+                              </a>
+                            </div>
+                          )}
+                          {btn && !btn.url && (
                             <div className="mt-3">
-                              {btn.url ? (
-                                <a href={btn.url} target="_blank" rel="noopener noreferrer">
-                                  <GradientButton variant={btn.variant} className="text-xs py-2 px-4 flex items-center gap-1.5">
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                    {btn.text}
-                                  </GradientButton>
-                                </a>
-                              ) : (
-                                <GradientButton variant={btn.variant} className="text-xs py-2 px-4">{btn.text}</GradientButton>
-                              )}
+                              <GradientButton variant={btn.variant} className="text-xs py-2 px-4">{btn.text}</GradientButton>
                             </div>
                           )}
                         </div>
                       )}
-
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Clock className="w-3 h-3" />
