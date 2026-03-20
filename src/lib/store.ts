@@ -228,8 +228,10 @@ export const store = {
     });
   },
   submitFactionApp: async (app: Omit<FactionApplication, "id" | "status" | "date">) => {
+    // faction_id in DB is BIGINT — parse to number if possible, else null
+    const factionIdNum = app.factionId && !isNaN(Number(app.factionId)) ? Number(app.factionId) : null;
     const { error } = await supabase.from("faction_applications").insert({
-      faction_id: app.factionId,
+      faction_id: factionIdNum,
       faction_name: app.factionName,
       username: app.nick,
       status: "pending",
