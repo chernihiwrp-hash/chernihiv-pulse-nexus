@@ -1475,7 +1475,7 @@ const RestrictionsTab = () => {
     toast.success(`Знайдено: ${n}`);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!found) return;
     await saveAdminPerms(found.nick, editPerms);
     setFound({ ...found, perms: editPerms });
