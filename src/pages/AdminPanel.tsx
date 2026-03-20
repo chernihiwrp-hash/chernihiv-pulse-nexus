@@ -753,7 +753,7 @@ const DebugTab = () => {
   const testInsertFaction = async () => {
     addLog("⏳ Тестую faction_applications INSERT...");
     const { data, error } = await supabase.from("faction_applications").insert({
-      faction_id: "test",
+      faction_id: null,
       faction_name: "Тест",
       username: "debug_user",
       status: "pending",
