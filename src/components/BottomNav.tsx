@@ -1,18 +1,43 @@
 import { Home, Shield, ShoppingCart, Gift, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useBadges } from "../hooks/useBadges";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/store";
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { badges } = useBadges();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [canClaim, setCanClaim] = useState(false);
+  const nick = localStorage.getItem("crp_nick") || "";
+
+  useEffect(() => {
+    if (!nick) return;
+
+    const load = async () => {
+      // Непрочитані нотифікації
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .ilike("username", nick)
+        .eq("read", false);
+      setUnreadCount(count || 0);
+
+      // Щоденна нагорода
+      const lastReward = parseInt(localStorage.getItem("crp_last_reward") || "0");
+      setCanClaim(Date.now() - lastReward > 24 * 60 * 60 * 1000);
+    };
+
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, [nick]);
 
   const tabs = [
-    { path: "/",         icon: Home,         label: "Головна",  badge: null },
-    { path: "/factions", icon: Shield,       label: "Фракції",  badge: null },
-    { path: "/casino",   icon: ShoppingCart, label: "Магазин",  badge: null },
-    { path: "/shop",     icon: Gift,         label: "Нагороди", badge: badges.reward ? "!" : null },
-    { path: "/profile",  icon: User,         label: "Профіль",  badge: badges.notifications > 0 ? badges.notifications : null },
+    { path: "/",         icon: Home,         label: "Головна",  badge: null as string | number | null },
+    { path: "/factions", icon: Shield,       label: "Фракції",  badge: null as string | number | null },
+    { path: "/casino",   icon: ShoppingCart, label: "Магазин",  badge: null as string | number | null },
+    { path: "/shop",     icon: Gift,         label: "Нагороди", badge: canClaim ? "•" : null as string | number | null },
+    { path: "/profile",  icon: User,         label: "Профіль",  badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : unreadCount) : null as string | number | null },
   ];
 
   return (
@@ -35,14 +60,25 @@ const BottomNav = () => {
             >
               <div className="relative">
                 <tab.icon className={`w-5 h-5 transition-all ${isActive ? "drop-shadow-[0_0_8px_hsl(var(--primary)/0.8)]" : ""}`} />
-                {/* Badge */}
                 {tab.badge !== null && (
-                  <div className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold
-                    ${typeof tab.badge === "number" ? "px-1 text-[9px] bg-destructive text-white" : "w-3 h-3 bg-primary"}`}
-                    style={{ boxShadow: typeof tab.badge === "number"
-                      ? "0 0 6px hsl(0 84% 60% / 0.8)"
-                      : "0 0 8px hsl(var(--primary) / 0.9)" }}>
-                    {typeof tab.badge === "number" ? (tab.badge > 9 ? "9+" : tab.badge) : ""}
+                  <div
+                    className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold text-[9px]"
+                    style={{
+                      background: typeof tab.badge === "number" || (typeof tab.badge === "string" && tab.badge !== "•")
+                        ? "hsl(0 84% 60%)"
+                        : "hsl(var(--primary))",
+                      color: "#fff",
+                      padding: "0 3px",
+                      boxShadow: typeof tab.badge === "number" || (typeof tab.badge === "string" && tab.badge !== "•")
+                        ? "0 0 6px hsl(0 84% 60% / 0.8)"
+                        : "0 0 8px hsl(var(--primary) / 0.9)",
+                      width: tab.badge === "•" ? "10px" : undefined,
+                      height: tab.badge === "•" ? "10px" : undefined,
+                      top: tab.badge === "•" ? "-2px" : undefined,
+                      right: tab.badge === "•" ? "-2px" : undefined,
+                    }}
+                  >
+                    {tab.badge !== "•" ? tab.badge : ""}
                   </div>
                 )}
               </div>
