@@ -28,6 +28,7 @@ const sosTypes = [
   { id: "other", label: "ІНШЕ", icon: HelpCircle, activeBg: "bg-muted/20 border-muted/40 text-foreground" },
 ];
 
+const ROBLOX_URL = "https://www.roblox.com/games/start?placeId=7711635737&launchData=joinCode%3D5319vick";
 const SERVER_CODE = "5319vick";
 
 const Index = () => {
@@ -42,7 +43,7 @@ const Index = () => {
   const handleSos = async () => {
     if (!sosDesc.trim()) return toast.error("Опишіть ситуацію");
     setSosSending(true);
-    await store.addSos(sosNick || "Гравець", sosType, sosDesc, sosType as "raid" | "cheater" | "nrp" | "other");
+    await store.addSos(sosNick || localStorage.getItem("crp_nick") || "Гравець", sosType, sosDesc, sosType as "raid" | "cheater" | "nrp" | "other");
     setSosSending(false);
     setShowSos(false);
     setSosDesc(""); setSosNick("");
@@ -58,7 +59,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-20 px-4 pt-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">CHERNIHIV RP</h1>
@@ -75,12 +75,13 @@ const Index = () => {
 
       {/* Play + server code */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => toast.info("Запускай Roblox і вводь код сервера!")}
+        {/* ГРАТИ — реальне посилання на Roblox */}
+        <a href={ROBLOX_URL} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all active:scale-95"
           style={{ background: "linear-gradient(135deg, hsl(142, 71%, 42%), hsl(142, 71%, 22%))", boxShadow: "0 0 20px hsl(142 71% 45% / 0.35)" }}>
           <Gamepad2 className="w-5 h-5" />
           ГРАТИ
-        </button>
+        </a>
         <div className="flex-1 liquid-glass rounded-2xl px-4 py-3 flex items-center justify-between">
           <div>
             <p className="text-[9px] text-muted-foreground">КОД СЕРВЕРУ</p>
@@ -98,9 +99,7 @@ const Index = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
           <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in liquid-glass-strong" onClick={e => e.stopPropagation()}
             style={{ border: "1px solid hsl(0 70% 50% / 0.25)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.15)" }}>
-            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
-            </button>
+            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground"><X className="w-5 h-5" /></button>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-xl bg-destructive/15 border border-destructive/25 flex items-center justify-center">
                 <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -108,7 +107,7 @@ const Index = () => {
               <h3 className="font-display text-sm font-bold text-destructive">SOS СИГНАЛ</h3>
             </div>
             <label className="text-xs text-muted-foreground mb-1.5 block">Ваш нік</label>
-            <input value={sosNick} onChange={e => setSosNick(e.target.value)} placeholder="Нік в грі"
+            <input value={sosNick || localStorage.getItem("crp_nick") || ""} onChange={e => setSosNick(e.target.value)} placeholder="Нік в грі"
               className="w-full liquid-glass rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 bg-transparent mb-3" />
             <label className="text-xs text-muted-foreground mb-1.5 block">Тип порушення</label>
             <div className="grid grid-cols-2 gap-2 mb-3">
@@ -133,20 +132,14 @@ const Index = () => {
         </div>
       )}
 
-      {/* Pulse City */}
       <div className="mb-5 animate-fade-in"><PulseCity /></div>
 
-      {/* Menu — новий дизайн: великі рядки */}
       <div className="space-y-2 mb-4">
         {menuItems.map((item, i) => (
           <button key={item.label} onClick={() => navigate(item.path)}
-            className="w-full animate-slide-up"
-            style={{ animationDelay: `${i * 50}ms` }}>
+            className="w-full animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
             <div className={`liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${item.red ? "hover:border-destructive/20" : "hover:border-primary/20"}`}
-              onMouseEnter={e => {
-                const color = item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${color}`;
-              }}
+              onMouseEnter={e => { const color = item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${color}`; }}
               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
                 <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
@@ -161,9 +154,7 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Admin application */}
-      <button onClick={() => navigate("/admin-application")}
-        className="w-full animate-slide-up" style={{ animationDelay: "420ms" }}>
+      <button onClick={() => navigate("/admin-application")} className="w-full animate-slide-up" style={{ animationDelay: "420ms" }}>
         <div className="liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all hover:border-primary/20 hover:scale-[1.01] active:scale-[0.98]">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 border border-primary/15 flex items-center justify-center shrink-0">
             <UserPlus className="w-5 h-5 text-primary" />
