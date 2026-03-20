@@ -16,7 +16,7 @@ const SERVER_CODE = "5319vick";
 
 const menuSections = [
   {
-    label: "🏛 Місто",
+    label: "Місто",
     items: [
       { icon: Newspaper, label: "Новини", desc: "Останні події міста", path: "/news" },
       { icon: Vote, label: "Вибори мера", desc: "Голосування за мера", path: "/mayor-election" },
@@ -213,7 +213,7 @@ const Index = () => {
         {/* Admin application — окремо */}
         <div className="animate-fade-in" style={{ animationDelay: "360ms" }}>
           <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">⭐ Кар'єра</span>
+            <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">Кар'єра</span>
             <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
           </div>
           <button onClick={() => navigate("/admin-application")} className="w-full">
