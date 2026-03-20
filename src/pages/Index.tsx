@@ -2,7 +2,7 @@ import {
   Newspaper, FileText, Home, Vote, ScrollText, Megaphone,
   Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy,
   Check, Swords, Bug, UserX, HelpCircle, ChevronRight,
-  Shield, Coins, Star
+  Shield, Star, Landmark, FileSearch
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,48 +10,42 @@ import PulseCity from "../components/PulseCity";
 import GradientButton from "../components/GradientButton";
 import { toast } from "sonner";
 import { store } from "../lib/store";
+import { useBadges } from "../hooks/useBadges";
 
 const ROBLOX_URL = "https://www.roblox.com/games/start?placeId=7711635737&launchData=joinCode%3D5319vick";
 const SERVER_CODE = "5319vick";
 
-const menuSections = [
-  {
-    label: "Місто",
-    items: [
-      { icon: Newspaper, label: "Новини", desc: "Останні події міста", path: "/news" },
-      { icon: Vote, label: "Вибори мера", desc: "Голосування за мера", path: "/mayor-election" },
-      { icon: Megaphone, label: "Голос міста", desc: "Скарги та ідеї", path: "/city-voice" },
-      { icon: ScrollText, label: "Документи", desc: "Офіційні папери", path: "/documents" },
-    ],
-  },
-  {
-    label: "Дозволи",
-    items: [
-      { icon: FileText, label: "Ліцензії", desc: "Зброя та дозволи", path: "/licenses" },
-      { icon: Car, label: "Номери авто", desc: "Реєстрація транспорту", path: "/car-registration" },
-    ],
-  },
-  {
-    label: "Нерухомість",
-    items: [
-      { icon: Home, label: "Будинки", desc: "Нерухомість міста", path: "/houses" },
-    ],
-  },
-  {
-    label: "Безпека",
-    items: [
-      { icon: Search, label: "Розшук", desc: "Список розшукуваних", path: "/wanted", red: true },
-      { icon: Shield, label: "Фракції", desc: "Державні та кримінальні", path: "/factions" },
-    ],
-  },
+// Головні розділи — 4 кнопки в 1 блоці (2x2 grid)
+const quickLinks = [
+  { icon: Shield,   label: "Фракції",   desc: "Вступ та склад",       path: "/factions",         red: false },
+  { icon: Search,   label: "Розшук",    desc: "Список розшуку",       path: "/wanted",            red: true  },
+  { icon: FileText, label: "Ліцензії",  desc: "Зброя та дозволи",     path: "/licenses",          red: false },
+  { icon: Home,     label: "Будинки",   desc: "Нерухомість",          path: "/houses",            red: false },
+];
+
+// Місто — список
+const cityItems = [
+  { icon: Newspaper, label: "Новини",       desc: "Останні події міста",  path: "/news" },
+  { icon: Vote,      label: "Вибори мера",  desc: "Голосування за мера",  path: "/mayor-election" },
+  { icon: Megaphone, label: "Голос міста",  desc: "Скарги та ідеї",       path: "/city-voice" },
+  { icon: ScrollText,label: "Документи",    desc: "Офіційні папери",      path: "/documents" },
+  { icon: Car,       label: "Номери авто",  desc: "Реєстрація транспорту",path: "/car-registration" },
 ];
 
 const sosTypes = [
-  { id: "raid", label: "РЕЙД", icon: Swords, activeBg: "bg-orange-400/15 border-orange-400/40 text-orange-400" },
-  { id: "cheater", label: "ЧИТЕР", icon: Bug, activeBg: "bg-red-400/15 border-red-400/40 text-red-400" },
-  { id: "nrp", label: "НРП", icon: UserX, activeBg: "bg-yellow-400/15 border-yellow-400/40 text-yellow-400" },
-  { id: "other", label: "ІНШЕ", icon: HelpCircle, activeBg: "bg-muted/20 border-muted/40 text-foreground" },
+  { id: "raid",    label: "РЕЙД",  icon: Swords,     activeBg: "bg-orange-400/15 border-orange-400/40 text-orange-400" },
+  { id: "cheater", label: "ЧИТЕР", icon: Bug,         activeBg: "bg-red-400/15 border-red-400/40 text-red-400" },
+  { id: "nrp",     label: "НРП",   icon: UserX,       activeBg: "bg-yellow-400/15 border-yellow-400/40 text-yellow-400" },
+  { id: "other",   label: "ІНШЕ",  icon: HelpCircle,  activeBg: "bg-muted/20 border-muted/40 text-foreground" },
 ];
+
+const SectionLabel = ({ icon: Icon, label }: { icon: typeof Shield; label: string }) => (
+  <div className="flex items-center gap-2 mb-2 px-1">
+    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+    <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{label}</span>
+    <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+  </div>
+);
 
 const Index = () => {
   const navigate = useNavigate();
@@ -61,11 +55,16 @@ const Index = () => {
   const [sosNick, setSosNick] = useState("");
   const [copied, setCopied] = useState(false);
   const [sosSending, setSosSending] = useState(false);
+  const { badges, markNewsRead } = useBadges();
 
   const handleSos = async () => {
     if (!sosDesc.trim()) return toast.error("Опишіть ситуацію");
     setSosSending(true);
-    await store.addSos(sosNick || localStorage.getItem("crp_nick") || "Гравець", sosType, sosDesc, sosType as "raid" | "cheater" | "nrp" | "other");
+    await store.addSos(
+      sosNick || localStorage.getItem("crp_nick") || "Гравець",
+      sosType, sosDesc,
+      sosType as "raid" | "cheater" | "nrp" | "other"
+    );
     setSosSending(false);
     setShowSos(false);
     setSosDesc(""); setSosNick("");
@@ -81,6 +80,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-24 px-4 pt-4">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -154,73 +154,71 @@ const Index = () => {
         </div>
       )}
 
-      {/* City visual */}
+      {/* Pulse city */}
       <div className="mb-5 animate-fade-in"><PulseCity /></div>
 
-      {/* Sections */}
       <div className="space-y-5">
-        {menuSections.map((section, si) => (
-          <div key={section.label} className="animate-fade-in" style={{ animationDelay: `${si * 80}ms` }}>
-            {/* Section label */}
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{section.label}</span>
-              <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
-            </div>
-            {/* Items grid: 2 columns for sections with 4 items, 1 column for others */}
-            {section.items.length >= 3 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {section.items.map((item, i) => (
-                  <button key={item.label} onClick={() => navigate(item.path)}
-                    className="animate-slide-up" style={{ animationDelay: `${(si * 4 + i) * 40}ms` }}>
-                    <div className={`liquid-glass-card rounded-2xl px-3 py-3.5 flex flex-col gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] h-full ${item.red ? "hover:border-destructive/25" : "hover:border-primary/25"}`}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"}`; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
-                        <item.icon className={`w-4.5 h-4.5 ${item.red ? "text-destructive" : "text-primary"}`} style={{ width: 18, height: 18 }} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`text-xs font-semibold leading-tight ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">{item.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {section.items.map((item, i) => (
-                  <button key={item.label} onClick={() => navigate(item.path)}
-                    className="w-full animate-slide-up" style={{ animationDelay: `${(si * 4 + i) * 40}ms` }}>
-                    <div className={`liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${item.red ? "hover:border-destructive/20" : "hover:border-primary/20"}`}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"}`; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
-                        <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className={`text-sm font-semibold ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{item.desc}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
 
-        {/* Admin application — окремо */}
-        <div className="animate-fade-in" style={{ animationDelay: "360ms" }}>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">Кар'єра</span>
-            <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+        {/* ── Швидкий доступ — 2x2 grid ── */}
+        <div className="animate-fade-in">
+          <SectionLabel icon={FileSearch} label="Швидкий доступ" />
+          <div className="grid grid-cols-2 gap-2">
+            {quickLinks.map((item, i) => (
+              <button key={item.label} onClick={() => navigate(item.path)}
+                className="animate-slide-up" style={{ animationDelay: `${i * 40}ms` }}>
+                <div
+                  className={`liquid-glass-card rounded-2xl p-4 flex flex-col gap-2.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] h-full text-left ${item.red ? "hover:border-destructive/25" : "hover:border-primary/25"}`}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${item.red ? "hsl(0 70% 50% / 0.14)" : "hsl(var(--primary) / 0.14)"}`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/15"}`}>
+                    <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
+                  </div>
+                  <div>
+                    <p className={`text-sm font-bold leading-tight ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* ── Місто — список ── */}
+        <div className="animate-fade-in" style={{ animationDelay: "80ms" }}>
+          <SectionLabel icon={Landmark} label="Місто" />
+          <div className="space-y-2">
+            {cityItems.map((item, i) => (
+              <button key={item.label} onClick={() => navigate(item.path)}
+                className="w-full animate-slide-up" style={{ animationDelay: `${100 + i * 40}ms` }}>
+                <div className="liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] hover:border-primary/20"
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 20px hsl(var(--primary) / 0.1)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+                  <div className="relative w-10 h-10 rounded-xl bg-primary/10 border border-primary/12 flex items-center justify-center shrink-0">
+                    <item.icon className="w-5 h-5 text-primary" />
+                    {(item as {badge?: boolean}).badge && badges.news && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse"
+                        style={{ boxShadow: "0 0 8px hsl(var(--primary))" }} />
+                    )}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Кар'єра ── */}
+        <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <SectionLabel icon={Star} label="Кар'єра" />
           <button onClick={() => navigate("/admin-application")} className="w-full">
             <div className="rounded-2xl px-4 py-4 flex items-center gap-3 transition-all hover:scale-[1.01] active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, hsl(84 81% 44% / 0.1), hsl(142 71% 45% / 0.05))", border: "1px solid hsl(84 81% 44% / 0.2)", boxShadow: "0 0 20px hsl(84 81% 44% / 0.06)" }}>
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.05))", border: "1px solid hsl(var(--primary) / 0.2)", boxShadow: "0 0 20px hsl(var(--primary) / 0.06)" }}>
               <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg, hsl(84 81% 44% / 0.2), hsl(142 71% 45% / 0.1))", border: "1px solid hsl(84 81% 44% / 0.25)" }}>
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--secondary) / 0.1))", border: "1px solid hsl(var(--primary) / 0.25)" }}>
                 <UserPlus className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 text-left">
@@ -228,12 +226,13 @@ const Index = () => {
                 <p className="text-[10px] text-muted-foreground">Стань частиною команди сервера</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Star className="w-3 h-3 text-yellow-400" />
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             </div>
           </button>
         </div>
+
       </div>
     </div>
   );
