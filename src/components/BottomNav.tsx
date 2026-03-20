@@ -1,12 +1,12 @@
-import { Home, Shield, ShoppingBag, Trophy, User } from "lucide-react";
+import { Home, Shield, ShoppingCart, Gift, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const tabs = [
-  { path: "/", icon: Home, label: "Головна" },
-  { path: "/factions", icon: Shield, label: "Фракції" },
-  { path: "/casino", icon: ShoppingBag, label: "Магазин" },
-  { path: "/shop", icon: Trophy, label: "Нагороди" },
-  { path: "/profile", icon: User, label: "Профіль" },
+  { path: "/",        icon: Home,         label: "Головна" },
+  { path: "/factions",icon: Shield,       label: "Фракції" },
+  { path: "/casino",  icon: ShoppingCart, label: "Магазин" },
+  { path: "/shop",    icon: Gift,         label: "Нагороди" },
+  { path: "/profile", icon: User,         label: "Профіль" },
 ];
 
 const BottomNav = () => {
@@ -31,11 +31,11 @@ const BottomNav = () => {
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <tab.icon className={`w-5 h-5 transition-all ${isActive ? "drop-shadow-[0_0_8px_hsl(84,81%,44%,0.8)]" : ""}`} />
+              <tab.icon className={`w-5 h-5 transition-all ${isActive ? "drop-shadow-[0_0_8px_hsl(var(--primary)/0.8)]" : ""}`} />
               <span className={`text-[10px] font-medium ${isActive ? "text-primary" : ""}`}>{tab.label}</span>
               {isActive && (
                 <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-primary"
-                  style={{ boxShadow: "0 0 6px hsl(84 81% 44%)" }} />
+                  style={{ boxShadow: "0 0 6px hsl(var(--primary))" }} />
               )}
             </button>
           );
