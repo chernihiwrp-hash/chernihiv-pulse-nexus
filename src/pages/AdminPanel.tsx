@@ -43,13 +43,14 @@ const isSuperAdmin = () =>
 type TabId =
   "sos" | "applications" | "factions" | "licenses" | "house_requests" |
   "news" | "houses" | "wanted" | "election" | "documents" |
-  "add_faction" | "voice" | "tokens" | "manage_factions";
+  "add_faction" | "voice" | "tokens" | "manage_factions" | "debug";
 
 const DEFAULT_PERMS: Record<TabId, boolean> = {
   sos: true, applications: true, factions: true, licenses: true,
   house_requests: true, news: true, houses: true, wanted: true,
   election: true, documents: true, add_faction: true, voice: true, tokens: true,
   manage_factions: true,
+  debug: true,
 };
 
 const getAdminPerms = (nick: string): Record<TabId, boolean> => {
@@ -79,6 +80,7 @@ const TAB_LIST: { id: TabId; label: string; icon: typeof Newspaper; sub: string;
   { id: "voice",         label: "Голос міста",           icon: Megaphone,     sub: "Управління" },
   { id: "tokens",        label: "Токени CR",             icon: Coins,         sub: "Фінанси" },
   { id: "manage_factions",label: "Управління фракціями",   icon: ShieldAlert,   sub: "Фракції" },
+  { id: "debug",           label: "Діагностика",            icon: Settings,      sub: "Debug" },
 ];
 
 const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent";
@@ -166,6 +168,7 @@ const AdminPanel = () => {
         {tab === "house_requests"&& <HouseRequestsTab />}
         {tab === "add_faction"   && <AddFactionTab />}
         {tab === "manage_factions" && <ManageFactionsTab />}
+        {tab === "debug"           && <DebugTab />}
       </div>
     );
   }
@@ -742,6 +745,98 @@ const DocumentsTab = () => {
 };
 
 // ─── FACTION APPS ─────────────────────────────────────────────────────────────
+// ─── DEBUG TAB ────────────────────────────────────────────────────────────────
+const DebugTab = () => {
+  const [log, setLog] = useState<string[]>([]);
+  const addLog = (msg: string) => setLog(prev => [msg, ...prev].slice(0, 20));
+
+  const testInsertFaction = async () => {
+    addLog("⏳ Тестую faction_applications INSERT...");
+    const { data, error } = await supabase.from("faction_applications").insert({
+      faction_id: "test",
+      faction_name: "Тест",
+      username: "debug_user",
+      status: "pending",
+      form_data: { nick: "debug_user", roblox: "test", age: "18", telegram: "@test", experience: "", message: "test" },
+    }).select();
+    if (error) {
+      addLog("❌ ПОМИЛКА: " + error.message);
+      addLog("   Code: " + error.code);
+      addLog("   Details: " + (error.details || "none"));
+      addLog("   Hint: " + (error.hint || "none"));
+    } else {
+      addLog("✅ faction_applications — OK! id=" + (data?.[0]?.id || "?"));
+      // Clean up test record
+      if (data?.[0]?.id) {
+        await supabase.from("faction_applications").delete().eq("id", data[0].id);
+        addLog("🧹 Тестовий запис видалено");
+      }
+    }
+  };
+
+  const testInsertAdmin = async () => {
+    addLog("⏳ Тестую admin_applications INSERT...");
+    const { data, error } = await supabase.from("admin_applications").insert({
+      username: "debug_user",
+      status: "pending",
+      form_data: { nick: "debug_user", roblox: "test", age: "18" },
+    }).select();
+    if (error) {
+      addLog("❌ ПОМИЛКА: " + error.message);
+      addLog("   Code: " + error.code);
+      addLog("   Details: " + (error.details || "none"));
+      addLog("   Hint: " + (error.hint || "none"));
+    } else {
+      addLog("✅ admin_applications — OK! id=" + (data?.[0]?.id || "?"));
+      if (data?.[0]?.id) {
+        await supabase.from("admin_applications").delete().eq("id", data[0].id);
+        addLog("🧹 Тестовий запис видалено");
+      }
+    }
+  };
+
+  const testSelect = async () => {
+    addLog("⏳ Тестую SELECT з обох таблиць...");
+    const { data: fa, error: fe } = await supabase.from("faction_applications").select("id").limit(1);
+    const { data: aa, error: ae } = await supabase.from("admin_applications").select("id").limit(1);
+    if (fe) addLog("❌ faction_applications SELECT: " + fe.message);
+    else addLog("✅ faction_applications SELECT OK, рядків: " + (fa?.length ?? 0));
+    if (ae) addLog("❌ admin_applications SELECT: " + ae.message);
+    else addLog("✅ admin_applications SELECT OK, рядків: " + (aa?.length ?? 0));
+  };
+
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <NeonCard glowColor="lime">
+        <h3 className="text-xs font-bold text-primary mb-3">Діагностика Supabase</h3>
+        <div className="space-y-2 mb-4">
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testSelect}>
+            Перевірити SELECT (читання)
+          </GradientButton>
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testInsertFaction}>
+            Тест INSERT faction_applications
+          </GradientButton>
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testInsertAdmin}>
+            Тест INSERT admin_applications
+          </GradientButton>
+        </div>
+        {log.length > 0 && (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {log.map((l, i) => (
+              <div key={i} className="liquid-glass rounded-lg px-3 py-1.5">
+                <p className="text-[10px] font-mono text-foreground">{l}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {log.length === 0 && (
+          <p className="text-[10px] text-muted-foreground text-center">Натисни кнопку — побачиш результат</p>
+        )}
+      </NeonCard>
+    </div>
+  );
+};
+
 const FactionAppsTab = () => {
   const [apps, setApps] = useState<FactionApplication[]>([]);
   const [loading, setLoading] = useState(true);
