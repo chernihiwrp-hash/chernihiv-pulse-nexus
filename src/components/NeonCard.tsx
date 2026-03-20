@@ -9,10 +9,10 @@ interface NeonCardProps {
 }
 
 const glowColors = {
-  green: { color: "hsl(142,71%,45%)", hover: "hsl(142,71%,45%,0.3)", border: "hsl(142,71%,45%,0.2)" },
-  lime: { color: "hsl(84,81%,44%)", hover: "hsl(84,81%,44%,0.3)", border: "hsl(84,81%,44%,0.2)" },
-  yellow: { color: "hsl(45,100%,55%)", hover: "hsl(45,100%,55%,0.3)", border: "hsl(45,100%,55%,0.2)" },
-  red: { color: "hsl(0,70%,50%)", hover: "hsl(0,70%,50%,0.3)", border: "hsl(0,70%,50%,0.2)" },
+  green: { hover: "hsl(142,71%,45%,0.3)", border: "hsl(142,71%,45%,0.2)" },
+  lime: { hover: "hsl(84,81%,44%,0.3)", border: "hsl(84,81%,44%,0.2)" },
+  yellow: { hover: "hsl(45,100%,55%,0.3)", border: "hsl(45,100%,55%,0.2)" },
+  red: { hover: "hsl(0,70%,50%,0.3)", border: "hsl(0,70%,50%,0.2)" },
 };
 
 const NeonCard = ({ children, className = "", onClick, glowColor = "lime", style }: NeonCardProps) => {
@@ -22,13 +22,11 @@ const NeonCard = ({ children, className = "", onClick, glowColor = "lime", style
     <div
       onClick={onClick}
       style={style}
-      className={`liquid-glass-card rounded-2xl p-4 card-press ripple-effect transition-all duration-300 ${onClick ? "cursor-pointer" : ""} ${className}`}
+      className={`liquid-glass-card rounded-2xl p-4 transition-all duration-300 ${onClick ? "cursor-pointer card-press ripple-effect" : ""} ${className}`}
       onMouseEnter={e => {
-        if (onClick) {
-          (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${g.hover}, inset 0 1px 0 hsl(0 0% 100% / 0.1)`;
-          (e.currentTarget as HTMLDivElement).style.borderColor = g.border;
-          (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
-        }
+        (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${g.hover}, inset 0 1px 0 hsl(0 0% 100% / 0.1)`;
+        (e.currentTarget as HTMLDivElement).style.borderColor = g.border;
+        if (onClick) (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLDivElement).style.boxShadow = "";
