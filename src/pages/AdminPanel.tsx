@@ -8,7 +8,7 @@ import {
   ShieldAlert, ChevronLeft, ChevronRight, Bug, Swords, UserX, HelpCircle,
   Link, Image, Type, Radio, UserCheck, Building2, Car, FileText, Gavel,
   MessageSquare, Wallet, ShieldCheck, Zap, RefreshCw, Crown, Lock, Eye,
-  EyeOff, Settings, UserCog, Search
+  EyeOff, Settings, UserCog, Search, Star, Palette
 } from "lucide-react";
 import { toast } from "sonner";
 import { store, supabase, getBalance, addBalance, subtractBalance } from "../lib/store";
@@ -643,7 +643,7 @@ const WantedTab = () => {
           <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Причина" className={inputClass} />
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Рівень розшуку</label>
-            <div className="flex gap-1">{[1,2,3,4,5].map(s => (<button key={s} onClick={() => setStars(s)} className={`text-lg transition-transform ${s <= stars ? "scale-110" : "opacity-30"}`}>⭐</button>))}</div>
+            <div className="flex gap-1">{[1,2,3,4,5].map(s => (<button key={s} onClick={() => setStars(s)} className={`transition-transform active:scale-90 ${s <= stars ? "scale-110" : "opacity-30"}`}><Star className={`w-5 h-5 ${s <= stars ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`} /></button>))}</div>
           </div>
           <GradientButton variant="danger" className="w-full text-xs py-2" onClick={add}>Додати до розшуку</GradientButton>
         </div>
@@ -654,7 +654,7 @@ const WantedTab = () => {
             <div>
               <div className="flex items-center gap-1.5 mb-0.5"><UserX className="w-3 h-3 text-destructive" /><h4 className="text-xs font-semibold">{w.name}</h4></div>
               <p className="text-[10px] text-muted-foreground">{w.reason}</p>
-              <div className="flex gap-0.5 mt-1">{Array.from({ length: w.stars }).map((_, j) => <span key={j} className="text-xs">⭐</span>)}</div>
+              <div className="flex gap-0.5 mt-1">{Array.from({ length: w.stars }).map((_, j) => <Star key={j} className="w-3 h-3 text-yellow-400 fill-yellow-400" />)}</div>
             </div>
             <button onClick={async () => { await store.removeWanted(w.id); setWanted(prev => prev.filter(x => x.id !== w.id)); toast.success("Видалено"); }} className="p-1.5 rounded-lg liquid-glass text-destructive active:scale-95"><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
@@ -744,11 +744,25 @@ const DocumentsTab = () => {
 // ─── FACTION APPS ─────────────────────────────────────────────────────────────
 const FactionAppsTab = () => {
   const [apps, setApps] = useState<FactionApplication[]>([]);
-  useEffect(() => { store.getFactionApps().then(setApps); }, []);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await store.getFactionApps();
+    setApps(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
   useEffect(() => {
-    const ch = store.onNewFactionApp(app => { setApps(prev => [app, ...prev]); toast.info(`Нова заявка від ${app.nick}`); });
+    const ch = store.onNewFactionApp(app => {
+      setApps(prev => [app, ...prev]);
+      toast.info(`Нова заявка від ${app.nick} у ${app.factionName}`);
+    });
     return () => { ch.unsubscribe(); };
   }, []);
+
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateFactionAppStatus(id, status);
     const app = apps.find(a => a.id === id);
@@ -756,29 +770,85 @@ const FactionAppsTab = () => {
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
+
   const sc = { review: "bg-yellow-400/15 text-yellow-400", approved: "bg-primary/15 text-primary", rejected: "bg-destructive/15 text-destructive" };
   const sl = { review: "На розгляді", approved: "Прийнято", rejected: "Відхилено" };
+
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">Заявок: {apps.length}</p>
-        <div className="flex items-center gap-1.5 text-[10px] text-primary"><Radio className="w-3 h-3 animate-pulse" /> Realtime</div>
+        <div className="flex items-center gap-2">
+          <button onClick={load} className="liquid-glass px-2 py-1 rounded-lg active:scale-95">
+            <RefreshCw className={`w-3 h-3 text-muted-foreground ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <div className="flex items-center gap-1.5 text-[10px] text-primary">
+            <Radio className="w-3 h-3 animate-pulse" /> Realtime
+          </div>
+        </div>
       </div>
-      {apps.length === 0 && <div className="text-center py-10 liquid-glass-card rounded-2xl"><Shield className="w-6 h-6 text-muted-foreground opacity-30 mx-auto mb-2" /><p className="text-xs text-muted-foreground">Немає заявок</p></div>}
+
+      {loading && <div className="text-center py-8"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>}
+      {!loading && apps.length === 0 && (
+        <div className="text-center py-10 liquid-glass-card rounded-2xl">
+          <Shield className="w-6 h-6 text-muted-foreground opacity-30 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">Немає заявок</p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1">Перевір що таблиця faction_applications існує в Supabase</p>
+        </div>
+      )}
+
       {apps.map(a => (
         <NeonCard key={a.id} glowColor="green">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-1.5 mb-1"><Users className="w-3 h-3 text-primary" /><h4 className="text-xs font-semibold">{a.nick}</h4></div>
-              <div className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-muted-foreground" /><p className="text-[10px] text-muted-foreground">{a.factionName}</p></div>
-              <p className="text-[10px] text-muted-foreground">Roblox: {a.roblox} | Вік: {a.age} | TG: {a.telegram}</p>
-              {a.message && <p className="text-[10px] text-muted-foreground mt-1 italic">"{a.message}"</p>}
-              <span className={`text-[9px] px-2 py-0.5 rounded-md mt-1 inline-block ${sc[a.status]}`}>{sl[a.status]}</span>
+          <div className="space-y-2">
+            {/* Header row */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Users className="w-3 h-3 text-primary" />
+                  <h4 className="text-xs font-bold">{a.nick}</h4>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${sc[a.status]}`}>{sl[a.status]}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-[10px] text-primary font-medium">{a.factionName}</p>
+                  <span className="text-[9px] text-muted-foreground">• {a.date}</span>
+                </div>
+              </div>
+              {a.status === "review" && (
+                <div className="flex gap-1 ml-2 shrink-0">
+                  <button onClick={() => decide(a.id, "approved")} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => decide(a.id, "rejected")} className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
             </div>
-            {a.status === "review" && (
-              <div className="flex gap-1 ml-2">
-                <button onClick={() => decide(a.id, "approved")} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={() => decide(a.id, "rejected")} className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95"><X className="w-3.5 h-3.5" /></button>
+
+            {/* Quick info */}
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { label: "Roblox", value: a.roblox },
+                { label: "Вік", value: a.age },
+                { label: "Telegram", value: a.telegram },
+              ].map(f => f.value ? (
+                <div key={f.label} className="liquid-glass rounded-lg px-2 py-1">
+                  <p className="text-[9px] text-muted-foreground">{f.label}</p>
+                  <p className="text-[10px] font-medium text-foreground truncate">{f.value}</p>
+                </div>
+              ) : null)}
+            </div>
+
+            {/* Expand/collapse message */}
+            {a.message && (
+              <div>
+                <button onClick={() => setExpanded(expanded === a.id ? null : a.id)}
+                  className="text-[10px] text-primary flex items-center gap-1">
+                  <ChevronRight className={`w-3 h-3 transition-transform ${expanded === a.id ? "rotate-90" : ""}`} />
+                  {expanded === a.id ? "Згорнути" : "Показати відповіді"}
+                </button>
+                {expanded === a.id && (
+                  <div className="mt-2 liquid-glass rounded-xl p-3">
+                    <p className="text-[10px] text-muted-foreground whitespace-pre-wrap">{a.message}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -791,39 +861,122 @@ const FactionAppsTab = () => {
 // ─── ADMIN APPS ───────────────────────────────────────────────────────────────
 const AdminAppsTab = () => {
   const [apps, setApps] = useState<AdminApplication[]>([]);
-  useEffect(() => { store.getAdminApps().then(setApps); }, []);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await store.getAdminApps();
+    setApps(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
   useEffect(() => {
-    const ch = store.onNewAdminApp(app => { setApps(prev => [app, ...prev]); toast.info(`Нова заявка від ${app.nick}`); });
+    const ch = store.onNewAdminApp(app => {
+      setApps(prev => [app, ...prev]);
+      toast.info(`Нова заявка на адміна від ${app.nick}`);
+    });
     return () => { ch.unsubscribe(); };
   }, []);
+
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateAdminAppStatus(id, status);
     store.addNotification(`Заявка на адміна ${status === "approved" ? "схвалена" : "відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
+
   const sc = { review: "bg-yellow-400/15 text-yellow-400", approved: "bg-primary/15 text-primary", rejected: "bg-destructive/15 text-destructive" };
   const sl = { review: "На розгляді", approved: "Прийнято", rejected: "Відхилено" };
+
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">Заявок: {apps.length}</p>
-        <div className="flex items-center gap-1.5 text-[10px] text-primary"><Radio className="w-3 h-3 animate-pulse" /> Realtime</div>
+        <div className="flex items-center gap-2">
+          <button onClick={load} className="liquid-glass px-2 py-1 rounded-lg active:scale-95">
+            <RefreshCw className={`w-3 h-3 text-muted-foreground ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <div className="flex items-center gap-1.5 text-[10px] text-primary">
+            <Radio className="w-3 h-3 animate-pulse" /> Realtime
+          </div>
+        </div>
       </div>
-      {apps.length === 0 && <div className="text-center py-10 liquid-glass-card rounded-2xl"><UserCheck className="w-6 h-6 text-muted-foreground opacity-30 mx-auto mb-2" /><p className="text-xs text-muted-foreground">Немає заявок</p></div>}
+
+      {loading && <div className="text-center py-8"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>}
+      {!loading && apps.length === 0 && (
+        <div className="text-center py-10 liquid-glass-card rounded-2xl">
+          <UserCheck className="w-6 h-6 text-muted-foreground opacity-30 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">Немає заявок</p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1">Перевір що таблиця admin_applications існує в Supabase</p>
+        </div>
+      )}
+
       {apps.map(a => (
         <NeonCard key={a.id} glowColor="lime">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5 mb-1"><UserCheck className="w-3 h-3 text-primary" /><h4 className="text-xs font-semibold">{a.nick}</h4></div>
-              <p className="text-[10px] text-muted-foreground">Roblox: {a.roblox} | Вік: {a.age} | {a.country}</p>
-              <p className="text-[10px] text-muted-foreground">TG: {a.telegram} | Мік: {a.hasMic ? "Так" : "Ні"} | RP: {a.rpKnowledge}/10</p>
-              <span className={`text-[9px] px-2 py-0.5 rounded-md mt-1 inline-block ${sc[a.status]}`}>{sl[a.status]}</span>
+          <div className="space-y-2">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <UserCheck className="w-3 h-3 text-primary" />
+                  <h4 className="text-xs font-bold">{a.nick}</h4>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${sc[a.status]}`}>{sl[a.status]}</span>
+                </div>
+                <p className="text-[9px] text-muted-foreground">{a.date}</p>
+              </div>
+              {a.status === "review" && (
+                <div className="flex gap-1 ml-2 shrink-0">
+                  <button onClick={() => decide(a.id, "approved")} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => decide(a.id, "rejected")} className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
             </div>
-            {a.status === "review" && (
-              <div className="flex gap-1 ml-2">
-                <button onClick={() => decide(a.id, "approved")} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={() => decide(a.id, "rejected")} className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95"><X className="w-3.5 h-3.5" /></button>
+
+            {/* Quick info grid */}
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                { label: "Roblox", value: a.roblox },
+                { label: "Вік", value: a.age },
+                { label: "Країна", value: a.country },
+                { label: "Telegram", value: a.telegram },
+                { label: "Час/день", value: a.timePerDay },
+                { label: "Мікрофон", value: a.hasMic ? "Так" : "Ні" },
+                { label: "RP стаж", value: a.rpTime },
+                { label: "RP знання", value: a.rpKnowledge ? `${a.rpKnowledge}/10` : "" },
+              ].filter(f => f.value).map(f => (
+                <div key={f.label} className="liquid-glass rounded-lg px-2 py-1">
+                  <p className="text-[9px] text-muted-foreground">{f.label}</p>
+                  <p className="text-[10px] font-medium text-foreground truncate">{f.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Expand answers */}
+            {(a.q1 || a.adminExp) && (
+              <div>
+                <button onClick={() => setExpanded(expanded === a.id ? null : a.id)}
+                  className="text-[10px] text-primary flex items-center gap-1">
+                  <ChevronRight className={`w-3 h-3 transition-transform ${expanded === a.id ? "rotate-90" : ""}`} />
+                  {expanded === a.id ? "Згорнути відповіді" : "Показати відповіді на питання"}
+                </button>
+                {expanded === a.id && (
+                  <div className="mt-2 space-y-2">
+                    {[
+                      { q: "Досвід адміністрування", a: a.adminExp },
+                      { q: "Адмін порушує правила — дії?", a: a.q1 },
+                      { q: "Гравець ображає в OOC — дії?", a: a.q2 },
+                      { q: "Знайомий порушив правила?", a: a.q3 },
+                      { q: "Чому хочеш бути адміном?", a: a.q4 },
+                    ].filter(item => item.a).map(item => (
+                      <div key={item.q} className="liquid-glass rounded-xl p-2.5">
+                        <p className="text-[9px] text-primary mb-1">{item.q}</p>
+                        <p className="text-[10px] text-foreground">{item.a}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -832,6 +985,7 @@ const AdminAppsTab = () => {
     </div>
   );
 };
+
 
 // ─── GRADIENT BUILDER ──────────────────────────────────────────────────────────
 const PRESET_COLORS = [
@@ -988,13 +1142,17 @@ const AddFactionTab = () => {
 
           {/* Gradient builder */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block font-semibold">🎨 Градієнт банера</label>
+            <label className="text-xs text-muted-foreground mb-2 block font-semibold flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5" /> Градієнт банера
+            </label>
             <GradientBuilder onChange={(g, c) => { setGradient(g); setColor(c); }} />
           </div>
 
           {/* Questionnaire */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block font-semibold">📋 Анкета вступу</label>
+            <label className="text-xs text-muted-foreground mb-2 block font-semibold flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" /> Анкета вступу
+            </label>
             <div className="space-y-2 mb-2">
               {questions.map((q, i) => (
                 <div key={i} className="flex items-center gap-2 liquid-glass rounded-xl px-3 py-2">
