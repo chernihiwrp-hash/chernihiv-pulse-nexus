@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://qwpzmioxhbkmxrwwevsv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cHptaW94aGJrbXhyd3dldnN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTM3NTksImV4cCI6MjA4OTUyOTc1OX0.CrPDm1vWaEruGVQpfBYKYwYO4DG9WlibhVzLHaBMGh8";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export type NewsItem = { id: number; title: string; text: string; date: string; image?: string; type?: "news" | "update" };
+export type NewsItem = { id: number; title: string; text: string; date: string; image?: string; type?: "news" | "update"; button_data?: string };
 export type HouseItem = { id: number; name: string; price: number; desc: string; category: string; owner: string | null; photos: string[] };
 export type WantedPerson = { id: number; name: string; reason: string; stars: number };
 export type FactionApplication = { id: number; factionId: string; factionName: string; nick: string; roblox: string; age: string; telegram: string; experience: string; message: string; status: "review" | "approved" | "rejected"; date: string };
@@ -22,10 +22,10 @@ export const store = {
   getNews: async (): Promise<NewsItem[]> => {
     const { data } = await supabase.from("news").select("*").order("created_at", { ascending: false });
     if (!data) return [];
-    return data.map((r: Record<string, unknown>) => ({ id: r.id as number, title: r.title as string, text: r.content as string, date: new Date(r.created_at as string).toLocaleDateString("uk-UA"), image: r.image_url as string | undefined, type: (r.type as "news" | "update") || "news" }));
+    return data.map((r: Record<string, unknown>) => ({ id: r.id as number, title: r.title as string, text: r.content as string, date: new Date(r.created_at as string).toLocaleDateString("uk-UA"), image: r.image_url as string | undefined, type: (r.type as "news" | "update") || "news", button_data: r.button_data as string | undefined }));
   },
-  addNews: async (title: string, text: string, imageUrl?: string, type: "news" | "update" = "news") => {
-    await supabase.from("news").insert({ title, content: text, image_url: imageUrl || null, type, author_id: "admin" });
+  addNews: async (title: string, text: string, imageUrl?: string, type: "news" | "update" = "news", buttonData?: string) => {
+    await supabase.from("news").insert({ title, content: text, image_url: imageUrl || null, type, author_id: "admin", button_data: buttonData || null });
   },
   deleteNews: async (id: number) => { await supabase.from("news").delete().eq("id", id); },
   setNews: (_: NewsItem[]) => {},
@@ -169,7 +169,7 @@ export const store = {
     if (!data) return [];
     return data.map((r: Record<string, unknown>) => ({ id: r.id as number, reason: r.type as string, description: r.message as string, date: new Date(r.created_at as string).toLocaleDateString("uk-UA"), type: r.type as string }));
   },
-  addSos: async (username: string, reason: string, description: string, type: "police" | "medic" | "fire" | "general" = "general") => {
+  addSos: async (username: string, reason: string, description: string, type: "raid" | "cheater" | "nrp" | "other" = "other") => {
     await supabase.from("sos_signals").insert({ username, message: description, type });
   },
   resolveSos: async (id: number) => { await supabase.from("sos_signals").update({ status: "resolved" }).eq("id", id); },
