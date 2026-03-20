@@ -4,7 +4,7 @@ import {
   Check, Swords, Bug, UserX, HelpCircle, ChevronRight,
   Shield, Star, Landmark, FileSearch
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PulseCity from "../components/PulseCity";
 import GradientButton from "../components/GradientButton";
