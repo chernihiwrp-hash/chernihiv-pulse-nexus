@@ -1,11 +1,10 @@
 import {
   Newspaper, FileText, Home, Vote, ScrollText, Megaphone,
   Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy,
-  Check, Swords, Bug, UserX, HelpCircle
+  Check, Swords, Bug, UserX, HelpCircle, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import NeonCard from "../components/NeonCard";
 import PulseCity from "../components/PulseCity";
 import GradientButton from "../components/GradientButton";
 import { toast } from "sonner";
@@ -46,8 +45,7 @@ const Index = () => {
     await store.addSos(sosNick || "Гравець", sosType, sosDesc, sosType as "raid" | "cheater" | "nrp" | "other");
     setSosSending(false);
     setShowSos(false);
-    setSosDesc("");
-    setSosNick("");
+    setSosDesc(""); setSosNick("");
     toast.success("SOS сигнал відправлено адміністрації!");
   };
 
@@ -59,7 +57,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 px-4 pt-4">
+    <div className="min-h-screen pb-20 px-4 pt-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">CHERNIHIV RP</h1>
@@ -67,18 +66,19 @@ const Index = () => {
         </div>
         <button onClick={() => setShowSos(true)}
           className="relative w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-all"
-          style={{ background: "linear-gradient(135deg, hsl(0 70% 50% / 0.15), hsl(0 70% 30% / 0.1))", boxShadow: "0 0 20px hsl(0 70% 50% / 0.3)", border: "1px solid hsl(0 70% 50% / 0.3)" }}>
+          style={{ background: "hsl(0 70% 50% / 0.12)", boxShadow: "0 0 16px hsl(0 70% 50% / 0.25)", border: "1px solid hsl(0 70% 50% / 0.25)" }}>
           <AlertTriangle className="w-5 h-5 text-destructive animate-pulse" />
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-destructive animate-ping" />
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-destructive" />
         </button>
       </div>
 
+      {/* Play + server code */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={() => toast.info("Запускай Roblox і вводь код сервера!")}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all active:scale-95"
-          style={{ background: "linear-gradient(135deg, hsl(142, 71%, 45%), hsl(142, 71%, 25%))", boxShadow: "0 0 20px hsl(142 71% 45% / 0.4)" }}>
-          <Gamepad2 className="w-5 h-5 text-white" />
+          style={{ background: "linear-gradient(135deg, hsl(142, 71%, 42%), hsl(142, 71%, 22%))", boxShadow: "0 0 20px hsl(142 71% 45% / 0.35)" }}>
+          <Gamepad2 className="w-5 h-5" />
           ГРАТИ
         </button>
         <div className="flex-1 liquid-glass rounded-2xl px-4 py-3 flex items-center justify-between">
@@ -92,43 +92,39 @@ const Index = () => {
         </div>
       </div>
 
+      {/* SOS Modal */}
       {showSos && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowSos(false)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in" onClick={e => e.stopPropagation()}
-            style={{ background: "linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 5%))", border: "1px solid hsl(0 70% 50% / 0.3)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.2)" }}>
-            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+          <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in liquid-glass-strong" onClick={e => e.stopPropagation()}
+            style={{ border: "1px solid hsl(0 70% 50% / 0.25)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.15)" }}>
+            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-destructive/15 border border-destructive/30 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-destructive/15 border border-destructive/25 flex items-center justify-center">
                 <AlertTriangle className="w-4 h-4 text-destructive" />
               </div>
               <h3 className="font-display text-sm font-bold text-destructive">SOS СИГНАЛ</h3>
             </div>
-
-            <label className="text-xs text-muted-foreground mb-2 block">Ваш нік</label>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Ваш нік</label>
             <input value={sosNick} onChange={e => setSosNick(e.target.value)} placeholder="Нік в грі"
               className="w-full liquid-glass rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 bg-transparent mb-3" />
-
-            <label className="text-xs text-muted-foreground mb-2 block">Тип порушення</label>
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <label className="text-xs text-muted-foreground mb-1.5 block">Тип порушення</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {sosTypes.map(t => {
                 const Icon = t.icon;
                 return (
                   <button key={t.id} onClick={() => setSosType(t.id)}
                     className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${sosType === t.id ? t.activeBg : "liquid-glass text-muted-foreground"}`}>
-                    <Icon className="w-4 h-4" />
-                    {t.label}
+                    <Icon className="w-4 h-4" /> {t.label}
                   </button>
                 );
               })}
             </div>
-
-            <label className="text-xs text-muted-foreground mb-2 block">Опис ситуації</label>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Опис ситуації</label>
             <textarea value={sosDesc} onChange={e => setSosDesc(e.target.value)} placeholder="Детально опишіть що сталося..."
-              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 resize-none h-20 bg-transparent mb-4" />
-
+              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none resize-none h-20 bg-transparent mb-4" />
             <GradientButton variant="danger" className="w-full" onClick={handleSos} disabled={sosSending}>
               <AlertTriangle className="w-4 h-4 inline mr-1.5" />
               {sosSending ? "Відправляю..." : "Відправити SOS"}
@@ -137,36 +133,48 @@ const Index = () => {
         </div>
       )}
 
-      <div className="mb-6 animate-fade-in"><PulseCity /></div>
+      {/* Pulse City */}
+      <div className="mb-5 animate-fade-in"><PulseCity /></div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Menu — новий дизайн: великі рядки */}
+      <div className="space-y-2 mb-4">
         {menuItems.map((item, i) => (
-          <div key={item.label} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
-            <NeonCard glowColor={item.red ? "red" : "lime"} onClick={() => navigate(item.path)}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/15"}`}>
+          <button key={item.label} onClick={() => navigate(item.path)}
+            className="w-full animate-slide-up"
+            style={{ animationDelay: `${i * 50}ms` }}>
+            <div className={`liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${item.red ? "hover:border-destructive/20" : "hover:border-primary/20"}`}
+              onMouseEnter={e => {
+                const color = item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${color}`;
+              }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
                 <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
               </div>
-              <h3 className="text-sm font-semibold text-foreground">{item.label}</h3>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
-            </NeonCard>
-          </div>
+              <div className="flex-1 text-left">
+                <p className={`text-sm font-semibold ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
+                <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </div>
+          </button>
         ))}
       </div>
 
-      <div className="mt-4 animate-slide-up" style={{ animationDelay: "500ms" }}>
-        <NeonCard glowColor="lime" onClick={() => navigate("/admin-application")}>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 border border-primary/15 flex items-center justify-center">
-              <UserPlus className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-foreground">Заявка на адміністрацію</h3>
-              <p className="text-[10px] text-muted-foreground">Стань адміністратором сервера</p>
-            </div>
-            <span className="text-[10px] text-primary font-medium">→</span>
+      {/* Admin application */}
+      <button onClick={() => navigate("/admin-application")}
+        className="w-full animate-slide-up" style={{ animationDelay: "420ms" }}>
+        <div className="liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all hover:border-primary/20 hover:scale-[1.01] active:scale-[0.98]">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 border border-primary/15 flex items-center justify-center shrink-0">
+            <UserPlus className="w-5 h-5 text-primary" />
           </div>
-        </NeonCard>
-      </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-foreground">Заявка на адміністрацію</p>
+            <p className="text-[10px] text-muted-foreground">Стань адміністратором сервера</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        </div>
+      </button>
     </div>
   );
 };
