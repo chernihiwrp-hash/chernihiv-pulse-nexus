@@ -1,7 +1,8 @@
 import {
   Newspaper, FileText, Home, Vote, ScrollText, Megaphone,
   Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy,
-  Check, Swords, Bug, UserX, HelpCircle, ChevronRight
+  Check, Swords, Bug, UserX, HelpCircle, ChevronRight,
+  Shield, Coins, Star
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,15 +11,39 @@ import GradientButton from "../components/GradientButton";
 import { toast } from "sonner";
 import { store } from "../lib/store";
 
-const menuItems = [
-  { icon: Newspaper, label: "Новини", desc: "Останні події", path: "/news" },
-  { icon: FileText, label: "Ліцензії", desc: "Зброя та дозволи", path: "/licenses" },
-  { icon: Home, label: "Будинки", desc: "Нерухомість", path: "/houses" },
-  { icon: Vote, label: "Вибори мера", desc: "Голосування", path: "/mayor-election" },
-  { icon: ScrollText, label: "Документи", desc: "Офіційні папери", path: "/documents" },
-  { icon: Megaphone, label: "Голос міста", desc: "Скарги та ідеї", path: "/city-voice" },
-  { icon: Search, label: "Розшук", desc: "Список розшуку", path: "/wanted", red: true },
-  { icon: Car, label: "Номери авто", desc: "Реєстрація", path: "/car-registration" },
+const ROBLOX_URL = "https://www.roblox.com/games/start?placeId=7711635737&launchData=joinCode%3D5319vick";
+const SERVER_CODE = "5319vick";
+
+const menuSections = [
+  {
+    label: "🏛 Місто",
+    items: [
+      { icon: Newspaper, label: "Новини", desc: "Останні події міста", path: "/news" },
+      { icon: Vote, label: "Вибори мера", desc: "Голосування за мера", path: "/mayor-election" },
+      { icon: Megaphone, label: "Голос міста", desc: "Скарги та ідеї", path: "/city-voice" },
+      { icon: ScrollText, label: "Документи", desc: "Офіційні папери", path: "/documents" },
+    ],
+  },
+  {
+    label: "⚖️ Дозволи",
+    items: [
+      { icon: FileText, label: "Ліцензії", desc: "Зброя та дозволи", path: "/licenses" },
+      { icon: Car, label: "Номери авто", desc: "Реєстрація транспорту", path: "/car-registration" },
+    ],
+  },
+  {
+    label: "🏠 Нерухомість",
+    items: [
+      { icon: Home, label: "Будинки", desc: "Нерухомість міста", path: "/houses" },
+    ],
+  },
+  {
+    label: "⚠️ Безпека",
+    items: [
+      { icon: Search, label: "Розшук", desc: "Список розшукуваних", path: "/wanted", red: true },
+      { icon: Shield, label: "Фракції", desc: "Державні та кримінальні", path: "/factions" },
+    ],
+  },
 ];
 
 const sosTypes = [
@@ -27,9 +52,6 @@ const sosTypes = [
   { id: "nrp", label: "НРП", icon: UserX, activeBg: "bg-yellow-400/15 border-yellow-400/40 text-yellow-400" },
   { id: "other", label: "ІНШЕ", icon: HelpCircle, activeBg: "bg-muted/20 border-muted/40 text-foreground" },
 ];
-
-const ROBLOX_URL = "https://www.roblox.com/games/start?placeId=7711635737&launchData=joinCode%3D5319vick";
-const SERVER_CODE = "5319vick";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -58,11 +80,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 px-4 pt-4">
+    <div className="min-h-screen pb-24 px-4 pt-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">CHERNIHIV RP</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">ПОРТАЛ</p>
+          <p className="text-xs text-muted-foreground mt-0.5">ПОРТАЛ ГРАВЦЯ</p>
         </div>
         <button onClick={() => setShowSos(true)}
           className="relative w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-all"
@@ -75,7 +98,6 @@ const Index = () => {
 
       {/* Play + server code */}
       <div className="flex items-center gap-3 mb-5">
-        {/* ГРАТИ — реальне посилання на Roblox */}
         <a href={ROBLOX_URL} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all active:scale-95"
           style={{ background: "linear-gradient(135deg, hsl(142, 71%, 42%), hsl(142, 71%, 22%))", boxShadow: "0 0 20px hsl(142 71% 45% / 0.35)" }}>
@@ -132,40 +154,87 @@ const Index = () => {
         </div>
       )}
 
+      {/* City visual */}
       <div className="mb-5 animate-fade-in"><PulseCity /></div>
 
-      <div className="space-y-2 mb-4">
-        {menuItems.map((item, i) => (
-          <button key={item.label} onClick={() => navigate(item.path)}
-            className="w-full animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
-            <div className={`liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${item.red ? "hover:border-destructive/20" : "hover:border-primary/20"}`}
-              onMouseEnter={e => { const color = item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${color}`; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
-                <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
+      {/* Sections */}
+      <div className="space-y-5">
+        {menuSections.map((section, si) => (
+          <div key={section.label} className="animate-fade-in" style={{ animationDelay: `${si * 80}ms` }}>
+            {/* Section label */}
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{section.label}</span>
+              <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+            </div>
+            {/* Items grid: 2 columns for sections with 4 items, 1 column for others */}
+            {section.items.length >= 3 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {section.items.map((item, i) => (
+                  <button key={item.label} onClick={() => navigate(item.path)}
+                    className="animate-slide-up" style={{ animationDelay: `${(si * 4 + i) * 40}ms` }}>
+                    <div className={`liquid-glass-card rounded-2xl px-3 py-3.5 flex flex-col gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] h-full ${item.red ? "hover:border-destructive/25" : "hover:border-primary/25"}`}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"}`; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
+                        <item.icon className={`w-4.5 h-4.5 ${item.red ? "text-destructive" : "text-primary"}`} style={{ width: 18, height: 18 }} />
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-xs font-semibold leading-tight ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">{item.desc}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {section.items.map((item, i) => (
+                  <button key={item.label} onClick={() => navigate(item.path)}
+                    className="w-full animate-slide-up" style={{ animationDelay: `${(si * 4 + i) * 40}ms` }}>
+                    <div className={`liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${item.red ? "hover:border-destructive/20" : "hover:border-primary/20"}`}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${item.red ? "hsl(0 70% 50% / 0.12)" : "hsl(84 81% 44% / 0.12)"}`; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.red ? "bg-destructive/10 border border-destructive/15" : "bg-primary/10 border border-primary/12"}`}>
+                        <item.icon className={`w-5 h-5 ${item.red ? "text-destructive" : "text-primary"}`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className={`text-sm font-semibold ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Admin application — окремо */}
+        <div className="animate-fade-in" style={{ animationDelay: "360ms" }}>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">⭐ Кар'єра</span>
+            <div className="flex-1 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+          </div>
+          <button onClick={() => navigate("/admin-application")} className="w-full">
+            <div className="rounded-2xl px-4 py-4 flex items-center gap-3 transition-all hover:scale-[1.01] active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, hsl(84 81% 44% / 0.1), hsl(142 71% 45% / 0.05))", border: "1px solid hsl(84 81% 44% / 0.2)", boxShadow: "0 0 20px hsl(84 81% 44% / 0.06)" }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, hsl(84 81% 44% / 0.2), hsl(142 71% 45% / 0.1))", border: "1px solid hsl(84 81% 44% / 0.25)" }}>
+                <UserPlus className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 text-left">
-                <p className={`text-sm font-semibold ${item.red ? "text-destructive" : "text-foreground"}`}>{item.label}</p>
-                <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                <p className="text-sm font-bold text-foreground">Заявка на адміністрацію</p>
+                <p className="text-[10px] text-muted-foreground">Стань частиною команди сервера</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex items-center gap-1 shrink-0">
+                <Star className="w-3 h-3 text-yellow-400" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
             </div>
           </button>
-        ))}
-      </div>
-
-      <button onClick={() => navigate("/admin-application")} className="w-full animate-slide-up" style={{ animationDelay: "420ms" }}>
-        <div className="liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-all hover:border-primary/20 hover:scale-[1.01] active:scale-[0.98]">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 border border-primary/15 flex items-center justify-center shrink-0">
-            <UserPlus className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-foreground">Заявка на адміністрацію</p>
-            <p className="text-[10px] text-muted-foreground">Стань адміністратором сервера</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </div>
-      </button>
+      </div>
     </div>
   );
 };
