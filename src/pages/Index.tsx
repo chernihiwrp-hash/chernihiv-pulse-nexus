@@ -1,4 +1,8 @@
-import { Newspaper, FileText, Home, Vote, ScrollText, Megaphone, Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy, Check } from "lucide-react";
+import {
+  Newspaper, FileText, Home, Vote, ScrollText, Megaphone,
+  Search, Car, UserPlus, AlertTriangle, X, Gamepad2, Copy,
+  Check, Swords, Bug, UserX, HelpCircle
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonCard from "../components/NeonCard";
@@ -19,10 +23,10 @@ const menuItems = [
 ];
 
 const sosTypes = [
-  { id: "police", icon: "🚔", label: "Поліція" },
-  { id: "medic", icon: "🚑", label: "Медики" },
-  { id: "fire", icon: "🚒", label: "Пожежні" },
-  { id: "general", icon: "🆘", label: "Загальний" },
+  { id: "raid", label: "РЕЙД", icon: Swords, activeBg: "bg-orange-400/15 border-orange-400/40 text-orange-400" },
+  { id: "cheater", label: "ЧИТЕР", icon: Bug, activeBg: "bg-red-400/15 border-red-400/40 text-red-400" },
+  { id: "nrp", label: "НРП", icon: UserX, activeBg: "bg-yellow-400/15 border-yellow-400/40 text-yellow-400" },
+  { id: "other", label: "ІНШЕ", icon: HelpCircle, activeBg: "bg-muted/20 border-muted/40 text-foreground" },
 ];
 
 const SERVER_CODE = "5319vick";
@@ -30,16 +34,21 @@ const SERVER_CODE = "5319vick";
 const Index = () => {
   const navigate = useNavigate();
   const [showSos, setShowSos] = useState(false);
-  const [sosType, setSosType] = useState("general");
+  const [sosType, setSosType] = useState("raid");
   const [sosDesc, setSosDesc] = useState("");
   const [sosNick, setSosNick] = useState("");
   const [copied, setCopied] = useState(false);
+  const [sosSending, setSosSending] = useState(false);
 
   const handleSos = async () => {
     if (!sosDesc.trim()) return toast.error("Опишіть ситуацію");
-    await store.addSos(sosNick || "Гравець", sosType, sosDesc, sosType as "police" | "medic" | "fire" | "general");
-    toast.success("🚨 SOS сигнал відправлено!");
-    setShowSos(false); setSosDesc(""); setSosNick("");
+    setSosSending(true);
+    await store.addSos(sosNick || "Гравець", sosType, sosDesc, sosType as "raid" | "cheater" | "nrp" | "other");
+    setSosSending(false);
+    setShowSos(false);
+    setSosDesc("");
+    setSosNick("");
+    toast.success("SOS сигнал відправлено адміністрації!");
   };
 
   const copyCode = () => {
@@ -65,7 +74,6 @@ const Index = () => {
         </button>
       </div>
 
-      {/* Play button + server code */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={() => toast.info("Запускай Roblox і вводь код сервера!")}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all active:scale-95"
@@ -84,33 +92,47 @@ const Index = () => {
         </div>
       </div>
 
-      {/* SOS Modal */}
       {showSos && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowSos(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in" onClick={e => e.stopPropagation()}
             style={{ background: "linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 5%))", border: "1px solid hsl(0 70% 50% / 0.3)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.2)" }}>
-            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowSos(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+              <X className="w-5 h-5" />
+            </button>
             <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <div className="w-8 h-8 rounded-xl bg-destructive/15 border border-destructive/30 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+              </div>
               <h3 className="font-display text-sm font-bold text-destructive">SOS СИГНАЛ</h3>
             </div>
-            <label className="text-xs text-muted-foreground mb-2 block">Ваш нік:</label>
+
+            <label className="text-xs text-muted-foreground mb-2 block">Ваш нік</label>
             <input value={sosNick} onChange={e => setSosNick(e.target.value)} placeholder="Нік в грі"
-              className="w-full liquid-glass rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none bg-transparent mb-3" />
-            <label className="text-xs text-muted-foreground mb-2 block">Тип сигналу:</label>
+              className="w-full liquid-glass rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 bg-transparent mb-3" />
+
+            <label className="text-xs text-muted-foreground mb-2 block">Тип порушення</label>
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {sosTypes.map(t => (
-                <button key={t.id} onClick={() => setSosType(t.id)}
-                  className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${sosType === t.id ? "bg-destructive/20 border-destructive/40 text-destructive" : "liquid-glass text-muted-foreground"}`}>
-                  <span className="text-base">{t.icon}</span> {t.label}
-                </button>
-              ))}
+              {sosTypes.map(t => {
+                const Icon = t.icon;
+                return (
+                  <button key={t.id} onClick={() => setSosType(t.id)}
+                    className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${sosType === t.id ? t.activeBg : "liquid-glass text-muted-foreground"}`}>
+                    <Icon className="w-4 h-4" />
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
-            <label className="text-xs text-muted-foreground mb-2 block">Опис ситуації:</label>
-            <textarea value={sosDesc} onChange={e => setSosDesc(e.target.value)} placeholder="Опишіть що сталося..."
-              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none resize-none h-20 bg-transparent mb-4" />
-            <GradientButton variant="danger" className="w-full" onClick={handleSos}>🚨 Відправити SOS</GradientButton>
+
+            <label className="text-xs text-muted-foreground mb-2 block">Опис ситуації</label>
+            <textarea value={sosDesc} onChange={e => setSosDesc(e.target.value)} placeholder="Детально опишіть що сталося..."
+              className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 resize-none h-20 bg-transparent mb-4" />
+
+            <GradientButton variant="danger" className="w-full" onClick={handleSos} disabled={sosSending}>
+              <AlertTriangle className="w-4 h-4 inline mr-1.5" />
+              {sosSending ? "Відправляю..." : "Відправити SOS"}
+            </GradientButton>
           </div>
         </div>
       )}
