@@ -1,29 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader";
 import NeonCard from "../components/NeonCard";
 import GradientButton from "../components/GradientButton";
-import { Megaphone, ThumbsUp, ThumbsDown, Lightbulb, FileText } from "lucide-react";
+import { Megaphone, ThumbsUp, ThumbsDown, Lightbulb, FileText, Send } from "lucide-react";
 import { toast } from "sonner";
 import { store } from "../lib/store";
+import type { CityVoiceItem } from "../lib/store";
 
 const CityVoice = () => {
-  const [ideas, setIdeas] = useState(store.getCityVoice());
+  const [ideas, setIdeas] = useState<CityVoiceItem[]>([]);
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"idea" | "petition">("idea");
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const save = (list: typeof ideas) => { setIdeas(list); store.setCityVoice(list); };
+  useEffect(() => {
+    setLoading(true);
+    store.getCityVoice().then(data => { setIdeas(data); setLoading(false); });
+  }, []);
 
-  const handleLike = (id: number) => save(ideas.map(i => i.id === id ? { ...i, likes: i.likes + 1 } : i));
-  const handleDislike = (id: number) => save(ideas.map(i => i.id === id ? { ...i, dislikes: i.dislikes + 1 } : i));
-
-  const submit = () => {
-    if (!message.trim()) return toast.error("Напишіть повідомлення");
-    save([{ id: Date.now(), author: "Ви", text: message, type, likes: 0, dislikes: 0, status: "active" }, ...ideas]);
-    toast.success(type === "idea" ? "Ідею відправлено!" : "Петицію створено!");
-    setMessage("");
+  const handleLike = async (id: number) => {
+    setIdeas(prev => prev.map(i => i.id === id ? { ...i, likes: i.likes + 1 } : i));
   };
 
-  const statusColors = { active: "bg-primary/15 text-primary border-primary/20", approved: "bg-secondary/15 text-secondary border-secondary/20", rejected: "bg-destructive/15 text-destructive border-destructive/20" };
+  const handleDislike = async (id: number) => {
+    setIdeas(prev => prev.map(i => i.id === id ? { ...i, dislikes: i.dislikes + 1 } : i));
+  };
+
+  const submit = async () => {
+    if (!message.trim()) return toast.error("Напишіть повідомлення");
+    setSending(true);
+    await store.submitCityVoice("Гравець", message, type);
+    const updated = await store.getCityVoice();
+    setIdeas(updated);
+    toast.success(type === "idea" ? "Ідею відправлено!" : "Петицію створено!");
+    setMessage("");
+    setSending(false);
+  };
+
+  const statusColors = {
+    active: "bg-primary/15 text-primary border-primary/20",
+    approved: "bg-secondary/15 text-secondary border-secondary/20",
+    rejected: "bg-destructive/15 text-destructive border-destructive/20"
+  };
   const statusLabels = { active: "Активна", approved: "Схвалено", rejected: "Відхилено" };
 
   return (
@@ -40,38 +59,61 @@ const CityVoice = () => {
             </button>
           ))}
         </div>
-        <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={type === "idea" ? "Ваша ідея..." : "Текст петиції..."}
+        <textarea value={message} onChange={e => setMessage(e.target.value)}
+          placeholder={type === "idea" ? "Ваша ідея для міста..." : "Текст петиції..."}
           className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none h-24 bg-transparent" />
-        <GradientButton variant="green" className="w-full mt-3 py-2 text-xs" onClick={submit}>
-          <Megaphone className="w-4 h-4 inline mr-1" /> Відправити
+        <GradientButton variant="green" className="w-full mt-3 py-2 text-xs" onClick={submit} disabled={sending}>
+          <Send className="w-3.5 h-3.5 inline mr-1.5" />
+          {sending ? "Відправляю..." : "Відправити"}
         </GradientButton>
       </div>
 
-      <div className="space-y-3">
-        {ideas.map((idea, i) => (
-          <div key={idea.id} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
-            <NeonCard glowColor="green">
-              <div className="flex items-center gap-2 mb-2">
-                {idea.type === "idea" ? <Lightbulb className="w-3.5 h-3.5 text-neon-yellow" /> : <FileText className="w-3.5 h-3.5 text-primary" />}
-                <span className="text-[10px] text-muted-foreground font-medium uppercase">{idea.type === "idea" ? "Ідея" : "Петиція"}</span>
-                <span className={`text-[9px] px-2 py-0.5 rounded-md border ml-auto ${statusColors[idea.status]}`}>{statusLabels[idea.status]}</span>
-              </div>
-              <p className="text-[11px] text-foreground mb-2">{idea.text}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">— {idea.author}</span>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => handleLike(idea.id)} className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 active:scale-95">
-                    <ThumbsUp className="w-3.5 h-3.5" /> {idea.likes}
-                  </button>
-                  <button onClick={() => handleDislike(idea.id)} className="flex items-center gap-1 text-[10px] text-destructive hover:text-destructive/80 active:scale-95">
-                    <ThumbsDown className="w-3.5 h-3.5" /> {idea.dislikes}
-                  </button>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">Завантаження...</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {ideas.map((idea, i) => (
+            <div key={idea.id} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
+              <NeonCard glowColor="green">
+                <div className="flex items-center gap-2 mb-2">
+                  {idea.type === "idea"
+                    ? <Lightbulb className="w-3.5 h-3.5 text-neon-yellow" />
+                    : <FileText className="w-3.5 h-3.5 text-primary" />}
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                    {idea.type === "idea" ? "Ідея" : "Петиція"}
+                  </span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-md border ml-auto ${statusColors[idea.status]}`}>
+                    {statusLabels[idea.status]}
+                  </span>
                 </div>
-              </div>
-            </NeonCard>
-          </div>
-        ))}
-      </div>
+                <p className="text-[11px] text-foreground mb-2">{idea.text}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">— {idea.author}</span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => handleLike(idea.id)}
+                      className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 active:scale-95 transition-all">
+                      <ThumbsUp className="w-3.5 h-3.5" /> {idea.likes}
+                    </button>
+                    <button onClick={() => handleDislike(idea.id)}
+                      className="flex items-center gap-1 text-[10px] text-destructive hover:text-destructive/80 active:scale-95 transition-all">
+                      <ThumbsDown className="w-3.5 h-3.5" /> {idea.dislikes}
+                    </button>
+                  </div>
+                </div>
+              </NeonCard>
+            </div>
+          ))}
+          {ideas.length === 0 && (
+            <div className="text-center py-12 liquid-glass-card rounded-2xl">
+              <Megaphone className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+              <p className="text-xs text-muted-foreground">Поки немає ідей. Будьте першим!</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
