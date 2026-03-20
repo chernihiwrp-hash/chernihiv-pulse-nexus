@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import {
   User, Briefcase, Home, Car, FileCheck, Wallet, Lock,
   Bell, ChevronDown, ChevronRight, Shield, CheckCircle,
-  LogIn, RefreshCw, Coins
+  LogIn, RefreshCw, Coins, Clock
 } from "lucide-react";
 import GradientButton from "../components/GradientButton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { store, supabase } from "../lib/store";
+import { store, supabase, getBalance } from "../lib/store";
 import type { Notification } from "../lib/store";
 
 const getTelegramUser = () => {
@@ -17,22 +17,24 @@ const getTelegramUser = () => {
   } catch { return null; }
 };
 
-const Trident = ({ opacity = 0.05 }: { opacity?: number }) => (
-  <svg viewBox="0 0 100 120" fill="currentColor" style={{ opacity }} className="text-white w-full h-full">
+const Trident = () => (
+  <svg viewBox="0 0 100 120" fill="currentColor" className="text-white w-full h-full opacity-[0.07]">
     <path d="M50 5 C50 5 42 15 42 28 C42 35 45 40 45 40 L35 40 C35 40 28 35 28 22 C28 10 35 5 35 5 L28 5 C28 5 18 12 18 28 C18 44 28 52 38 54 L38 100 L44 100 L44 60 L56 60 L56 100 L62 100 L62 54 C72 52 82 44 82 28 C82 12 72 5 72 5 L65 5 C65 5 72 10 72 22 C72 35 65 40 65 40 L55 40 C55 40 58 35 58 28 C58 15 50 5 50 5Z"/>
   </svg>
 );
 
-type UserData = {
-  username: string;
-  role: string;
-  theme: string;
-  registered_at: string;
-  telegram_id?: string;
+type ProfileData = {
+  houses: { id: number; name: string; price: number }[];
+  factionApps: { faction_name: string; status: string }[];
+  licenses: { id: number; license_type: string; plate_number: string | null; status: string }[];
 };
 
-type OwnedHouse = { id: number; name: string; price: number };
-type FactionApp = { factionName: string; status: string };
+const statusColors: Record<string, string> = {
+  approved: "text-primary", pending: "text-yellow-400", rejected: "text-destructive", review: "text-yellow-400",
+};
+const statusLabels: Record<string, string> = {
+  approved: "Прийнято", pending: "На розгляді", rejected: "Відхилено", review: "На розгляді",
+};
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -43,10 +45,8 @@ const Profile = () => {
   const [showActivity, setShowActivity] = useState(false);
   const [isTg, setIsTg] = useState(false);
   const [tgUser, setTgUser] = useState<{ id: number; first_name: string; last_name?: string; username?: string; photo_url?: string } | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [ownedHouses, setOwnedHouses] = useState<OwnedHouse[]>([]);
-  const [factionApps, setFactionApps] = useState<FactionApp[]>([]);
-  const [balance, setBalance] = useState(0);
+  const [profileData, setProfileData] = useState<ProfileData>({ houses: [], factionApps: [], licenses: [] });
+  const [balance, setBalanceState] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const nick = localStorage.getItem("crp_nick") || "Гравець";
@@ -54,40 +54,15 @@ const Profile = () => {
   const loadData = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Завантажуємо дані юзера
-      const { data: user } = await supabase
-        .from("users")
-        .select("*")
-        .eq("username", nick)
-        .single();
-      if (user) setUserData(user as UserData);
-
-      // Куплені будинки
-      const { data: houses } = await supabase
-        .from("houses")
-        .select("id, name, price")
-        .eq("owner_username", nick);
-      if (houses) setOwnedHouses(houses as OwnedHouse[]);
-
-      // Заявки у фракції
-      const { data: apps } = await supabase
-        .from("faction_applications")
-        .select("faction_name, status")
-        .eq("username", nick)
-        .order("created_at", { ascending: false });
-      if (apps) setFactionApps(apps.map(a => ({ factionName: a.faction_name, status: a.status })));
-
-      // Баланс
-      const bal = parseInt(localStorage.getItem("crp_balance") || "0");
-      setBalance(bal);
-    } catch (e) {
-      console.error(e);
-    }
+      const data = await store.getPlayerProfile(nick);
+      setProfileData(data);
+      setBalanceState(getBalance(nick));
+      setNotifications(store.getNotifications());
+    } catch (e) { console.error(e); }
     setRefreshing(false);
   }, [nick]);
 
   useEffect(() => {
-    setNotifications(store.getNotifications());
     const user = getTelegramUser();
     if (user) { setTgUser(user); setIsTg(true); }
     else {
@@ -98,10 +73,7 @@ const Profile = () => {
   }, [loadData]);
 
   const unread = notifications.filter(n => !n.read).length;
-  const markRead = () => {
-    const all = notifications.map(n => ({ ...n, read: true }));
-    store.setNotifications(all); setNotifications(all);
-  };
+  const markRead = () => { const all = notifications.map(n => ({ ...n, read: true })); store.setNotifications(all); setNotifications(all); };
   const handleAdmin = () => {
     if (adminCode === "5319son") { navigate("/admin-panel"); toast.success("Доступ відкрито"); }
     else toast.error("Невірний код");
@@ -109,24 +81,13 @@ const Profile = () => {
   };
 
   const name = tgUser ? `${tgUser.first_name}${tgUser.last_name ? " " + tgUser.last_name : ""}` : nick;
-  const uid = tgUser ? String(tgUser.id) : (userData?.telegram_id || "000001");
+  const uid = tgUser ? String(tgUser.id) : "000001";
   const uname = tgUser?.username ? `@${tgUser.username}` : null;
-  const regDate = userData?.registered_at ? new Date(userData.registered_at).toLocaleDateString("uk-UA") : new Date().toLocaleDateString("uk-UA");
+  const regDate = new Date().toLocaleDateString("uk-UA");
 
-  // Поточна фракція (остання схвалена заявка)
-  const activeFaction = factionApps.find(a => a.status === "approved")?.factionName || null;
-  const pendingFaction = factionApps.find(a => a.status === "pending")?.factionName || null;
-
-  const statusColors: Record<string, string> = {
-    approved: "text-primary",
-    pending: "text-yellow-400",
-    rejected: "text-destructive",
-  };
-  const statusLabels: Record<string, string> = {
-    approved: "Прийнято",
-    pending: "На розгляді",
-    rejected: "Відхилено",
-  };
+  const activeFaction = profileData.factionApps.find(a => a.status === "approved")?.faction_name || null;
+  const pendingFaction = profileData.factionApps.find(a => a.status === "pending")?.faction_name || null;
+  const firstHouse = profileData.houses[0] || null;
 
   return (
     <div className="min-h-screen pb-24 px-4 pt-4">
@@ -134,12 +95,10 @@ const Profile = () => {
       <div className="flex items-center justify-between mb-5">
         <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">ПРОФІЛЬ</h1>
         <div className="flex items-center gap-2">
-          <button onClick={loadData} disabled={refreshing}
-            className="w-9 h-9 liquid-glass rounded-xl flex items-center justify-center active:scale-95 transition-all">
+          <button onClick={loadData} disabled={refreshing} className="w-9 h-9 liquid-glass rounded-xl flex items-center justify-center active:scale-95 transition-all">
             <RefreshCw className={`w-4 h-4 text-muted-foreground ${refreshing ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => setShowNotifs(!showNotifs)}
-            className="relative w-9 h-9 liquid-glass rounded-xl flex items-center justify-center active:scale-95 transition-all">
+          <button onClick={() => setShowNotifs(!showNotifs)} className="relative w-9 h-9 liquid-glass rounded-xl flex items-center justify-center active:scale-95 transition-all">
             <Bell className="w-4 h-4 text-primary" />
             {unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full text-[8px] flex items-center justify-center text-white font-bold">{unread}</span>}
           </button>
@@ -155,11 +114,10 @@ const Profile = () => {
           </div>
           {notifications.length === 0
             ? <p className="text-xs text-muted-foreground text-center py-2">Немає сповіщень</p>
-            : <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                {notifications.slice(0, 6).map(n => (
+            : <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {notifications.slice(0, 8).map(n => (
                   <div key={n.id} className={`text-[10px] p-2 rounded-xl ${n.read ? "text-muted-foreground" : "text-foreground bg-primary/8 border border-primary/12"}`}>
-                    <p>{n.text}</p>
-                    <span className="text-[8px] text-muted-foreground">{n.date}</span>
+                    <p>{n.text}</p><span className="text-[8px] text-muted-foreground">{n.date}</span>
                   </div>
                 ))}
               </div>
@@ -171,9 +129,7 @@ const Profile = () => {
       {!isTg && (
         <div className="mb-4 rounded-2xl p-4 border border-primary/15 liquid-glass animate-fade-in">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">
-              <LogIn className="w-4 h-4 text-primary" />
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0"><LogIn className="w-4 h-4 text-primary" /></div>
             <div>
               <p className="text-sm font-semibold">Увійдіть через бота</p>
               <a href="https://t.me/CHERNIHIVSITE_BOT" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-medium">@CHERNIHIVSITE_BOT</a>
@@ -182,21 +138,33 @@ const Profile = () => {
         </div>
       )}
 
-      {/* PASSPORT */}
+      {/* ═══ PASSPORT CARD ═══ */}
       <div className="mb-4 animate-fade-in">
         <div className="rounded-2xl overflow-hidden relative select-none"
           style={{
-            background: "linear-gradient(145deg, hsl(240 15% 10%) 0%, hsl(240 10% 6%) 100%)",
-            border: "1px solid hsl(0 0% 100% / 0.1)",
-            boxShadow: "0 8px 32px hsl(0 0% 0% / 0.5)"
+            border: "1px solid hsl(0 0% 100% / 0.12)",
+            boxShadow: "0 8px 32px hsl(0 0% 0% / 0.5)",
           }}>
-          {/* Trident watermark */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-24 h-28 pointer-events-none">
-            <Trident opacity={0.04} />
+
+          {/* BG image */}
+          <div className="absolute inset-0">
+            <img
+              src="https://i.ibb.co/NbX6ZNs/images-2.jpg"
+              alt=""
+              className="w-full h-full object-cover"
+              style={{ opacity: 0.18 }}
+              onError={e => { e.currentTarget.style.display = "none"; }}
+            />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(145deg, hsl(240 15% 8% / 0.95) 0%, hsl(240 10% 5% / 0.92) 100%)" }} />
           </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-2" style={{ borderBottom: "1px solid hsl(0 0% 100% / 0.06)" }}>
+          {/* Trident watermark */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-24 h-28 pointer-events-none">
+            <Trident />
+          </div>
+
+          {/* Header strip */}
+          <div className="relative flex items-center justify-between px-4 pt-3 pb-2" style={{ borderBottom: "1px solid hsl(0 0% 100% / 0.07)" }}>
             <div>
               <p className="text-[7px] text-muted-foreground/50 tracking-[0.3em] uppercase">Удостоверение</p>
               <p className="text-[8px] text-muted-foreground/70 tracking-[0.15em] font-semibold uppercase">Chernihiv RP</p>
@@ -204,16 +172,13 @@ const Profile = () => {
             <p className="text-[8px] text-muted-foreground/50 font-mono">#{uid.slice(-6)}</p>
           </div>
 
-          {/* Main */}
-          <div className="px-4 py-3 flex items-start gap-3">
-            <div className="w-[72px] h-[72px] rounded-xl overflow-hidden shrink-0"
-              style={{ border: "1.5px solid hsl(0 0% 100% / 0.12)" }}>
+          {/* Main row */}
+          <div className="relative px-4 py-3 flex items-start gap-3">
+            <div className="w-[72px] h-[72px] rounded-xl overflow-hidden shrink-0" style={{ border: "1.5px solid hsl(0 0% 100% / 0.15)" }}>
               {tgUser?.photo_url ? (
-                <img src={tgUser.photo_url} alt={name} className="w-full h-full object-cover"
-                  onError={e => { e.currentTarget.style.display = "none"; }} />
+                <img src={tgUser.photo_url} alt={name} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = "none"; }} />
               ) : (
-                <div className="w-full h-full flex items-center justify-center"
-                  style={{ background: "hsl(84 81% 44% / 0.08)" }}>
+                <div className="w-full h-full flex items-center justify-center" style={{ background: "hsl(84 81% 44% / 0.08)" }}>
                   <User className="w-8 h-8 text-primary/30" />
                 </div>
               )}
@@ -229,34 +194,34 @@ const Profile = () => {
                 <span className="text-[8px] text-muted-foreground/40">{regDate}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Coins className="w-3 h-3 text-muted-foreground/40" />
-                <span className="text-[10px] text-muted-foreground/60 font-semibold">{balance} CR</span>
+                <Coins className="w-3 h-3 text-yellow-400/70" />
+                <span className="text-[10px] font-semibold text-yellow-400/80">{balance} CR</span>
               </div>
             </div>
           </div>
 
-          {/* Bottom */}
-          <div className="px-4 pb-3 grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
-              style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-              <Briefcase className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+          {/* Bottom stats */}
+          <div className="relative px-4 pb-3 grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "hsl(0 0% 100% / 0.05)", border: "1px solid hsl(0 0% 100% / 0.07)" }}>
+              <Briefcase className="w-3 h-3 text-muted-foreground/50 shrink-0" />
               <div>
                 <p className="text-[7px] text-muted-foreground/40 uppercase tracking-wider">Фракція</p>
-                <p className="text-[10px] font-medium text-foreground/70">{activeFaction || (pendingFaction ? `${pendingFaction} (очікує)` : "Немає")}</p>
+                <p className="text-[10px] font-medium text-foreground/80 truncate">
+                  {activeFaction || (pendingFaction ? `${pendingFaction}...` : "Немає")}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
-              style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-              <Home className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "hsl(0 0% 100% / 0.05)", border: "1px solid hsl(0 0% 100% / 0.07)" }}>
+              <Home className="w-3 h-3 text-muted-foreground/50 shrink-0" />
               <div>
                 <p className="text-[7px] text-muted-foreground/40 uppercase tracking-wider">Дім</p>
-                <p className="text-[10px] font-medium text-foreground/70">{ownedHouses.length > 0 ? ownedHouses[0].name : "Немає"}</p>
+                <p className="text-[10px] font-medium text-foreground/80 truncate">{firstHouse?.name || "Немає"}</p>
               </div>
             </div>
           </div>
 
           {/* Machine line */}
-          <div className="px-4 py-1.5" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.04)", background: "hsl(0 0% 100% / 0.02)" }}>
+          <div className="relative px-4 py-1.5" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.05)", background: "hsl(0 0% 100% / 0.02)" }}>
             <p className="text-[6px] text-muted-foreground/20 font-mono tracking-widest text-center truncate">
               CHERNIHIV RP &lt;&lt; {nick.toUpperCase()} &lt;&lt; {uid.slice(-8)}
             </p>
@@ -283,11 +248,14 @@ const Profile = () => {
         </button>
         {showActivity && (
           <div className="mt-1 liquid-glass rounded-2xl p-4 animate-fade-in">
-            {factionApps.length > 0 ? (
+            {profileData.factionApps.length > 0 ? (
               <div className="space-y-2">
-                {factionApps.map((a, i) => (
+                {profileData.factionApps.slice(0, 5).map((a, i) => (
                   <div key={i} className="flex items-center justify-between">
-                    <p className="text-xs text-foreground">{a.factionName}</p>
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs text-foreground">{a.faction_name}</span>
+                    </div>
                     <span className={`text-[10px] font-semibold ${statusColors[a.status] || "text-muted-foreground"}`}>
                       {statusLabels[a.status] || a.status}
                     </span>
@@ -321,15 +289,15 @@ const Profile = () => {
             </button>
           </div>
           <div className="px-4 py-3">
-            {ownedHouses.length > 0 ? (
+            {profileData.houses.length > 0 ? (
               <div className="space-y-2">
-                {ownedHouses.map(h => (
+                {profileData.houses.map(h => (
                   <div key={h.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Home className="w-3.5 h-3.5 text-primary" />
                       <span className="text-xs text-foreground">{h.name}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{h.price.toLocaleString()} CR</span>
+                    <span className="text-[10px] text-yellow-400 font-semibold">{h.price.toLocaleString()} CR</span>
                   </div>
                 ))}
               </div>
@@ -354,13 +322,27 @@ const Profile = () => {
               Отримати <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="px-4 py-3 text-center">
-            <p className="text-xs text-muted-foreground">Немає активних ліцензій</p>
+          <div className="px-4 py-3">
+            {profileData.licenses.length > 0 ? (
+              <div className="space-y-1.5">
+                {profileData.licenses.map(l => (
+                  <div key={l.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Car className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs text-foreground">{l.license_type}</span>
+                    </div>
+                    {l.plate_number && <span className="text-[10px] font-mono text-yellow-400">{l.plate_number}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">Немає активних ліцензій</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Реєстрація */}
+      {/* Адмін заявка */}
       <div className="mb-2">
         <button onClick={() => navigate("/admin-application")}
           className="w-full liquid-glass-card rounded-2xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] hover:border-primary/20">
