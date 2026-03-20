@@ -833,24 +833,143 @@ const AdminAppsTab = () => {
   );
 };
 
+// ─── GRADIENT BUILDER ──────────────────────────────────────────────────────────
+const PRESET_COLORS = [
+  { label: "Лайм", value: "#84cc16" },
+  { label: "Зелений", value: "#22c55e" },
+  { label: "Синій", value: "#3b82f6" },
+  { label: "Блакитний", value: "#06b6d4" },
+  { label: "Фіолетовий", value: "#a855f7" },
+  { label: "Рожевий", value: "#ec4899" },
+  { label: "Жовтий", value: "#eab308" },
+  { label: "Помаранчевий", value: "#f97316" },
+  { label: "Червоний", value: "#ef4444" },
+  { label: "Сірий", value: "#6b7280" },
+  { label: "Темний", value: "#1e293b" },
+  { label: "Білий", value: "#e2e8f0" },
+];
+
+const FACTION_QUESTIONS_PRESETS = [
+  "Чому хочеш вступити у фракцію?",
+  "Який у тебе досвід в RP?",
+  "Як ти поводитимешся з порушниками правил?",
+  "Скільки часу на день граєш?",
+  "Що знаєш про нашу фракцію?",
+  "Опиши свій RP стиль",
+];
+
+type GradientStop = { color: string };
+
+const GradientBuilder = ({ onChange }: { onChange: (gradient: string, color: string) => void }) => {
+  const [stops, setStops] = useState<GradientStop[]>([{ color: "#22c55e" }, { color: "#0f172a" }]);
+  const [angle, setAngle] = useState(135);
+
+  const buildGradient = (s: GradientStop[], a: number) => {
+    const stops2 = s.map((st, i) => {
+      const pct = Math.round((i / Math.max(s.length - 1, 1)) * 100);
+      // Convert to semi-transparent for neon look
+      const hex = st.color;
+      return `${hex}33 ${pct}%`;
+    });
+    return `linear-gradient(${a}deg, ${stops2.join(", ")})`;
+  };
+
+  useEffect(() => {
+    const g = buildGradient(stops, angle);
+    onChange(g, stops[0].color);
+  }, [stops, angle]);
+
+  return (
+    <div className="space-y-3">
+      {/* Preview */}
+      <div className="h-16 rounded-xl w-full transition-all"
+        style={{ background: buildGradient(stops, angle), border: "1px solid hsl(0 0% 100% / 0.12)" }} />
+
+      {/* Angle */}
+      <div>
+        <label className="text-[10px] text-muted-foreground mb-1 block uppercase tracking-wider">Кут: {angle}°</label>
+        <input type="range" min={0} max={360} value={angle} onChange={e => setAngle(Number(e.target.value))}
+          className="w-full accent-primary h-2" />
+        <div className="flex justify-between text-[9px] text-muted-foreground mt-0.5">
+          <span>0°</span><span>90°</span><span>180°</span><span>270°</span><span>360°</span>
+        </div>
+      </div>
+
+      {/* Color stops */}
+      <div>
+        <label className="text-[10px] text-muted-foreground mb-1.5 block uppercase tracking-wider">Кольори ({stops.length})</label>
+        <div className="space-y-2">
+          {stops.map((stop, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input type="color" value={stop.color}
+                onChange={e => { const ns = [...stops]; ns[i] = { color: e.target.value }; setStops(ns); }}
+                className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent shrink-0" />
+              <div className="flex flex-wrap gap-1 flex-1">
+                {PRESET_COLORS.map(pc => (
+                  <button key={pc.value} title={pc.label}
+                    onClick={() => { const ns = [...stops]; ns[i] = { color: pc.value }; setStops(ns); }}
+                    className={`w-5 h-5 rounded-md transition-all active:scale-90 ${stop.color === pc.value ? "ring-2 ring-white ring-offset-1 ring-offset-black" : ""}`}
+                    style={{ background: pc.value }} />
+                ))}
+              </div>
+              {stops.length > 2 && (
+                <button onClick={() => setStops(stops.filter((_, j) => j !== i))}
+                  className="text-muted-foreground text-xs liquid-glass px-2 py-1 rounded-lg shrink-0">✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+        {stops.length < 4 && (
+          <button onClick={() => setStops([...stops, { color: "#0f172a" }])}
+            className="mt-2 text-[10px] text-primary liquid-glass px-3 py-1.5 rounded-xl">
+            + Додати колір
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── ADD FACTION ──────────────────────────────────────────────────────────────
 const AddFactionTab = () => {
-  const [name, setName] = useState(""); const [color, setColor] = useState("#22c55e");
-  const [logoUrl, setLogoUrl] = useState(""); const [gradient, setGradient] = useState("");
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#22c55e");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [gradient, setGradient] = useState("");
   const [section, setSection] = useState<"main" | "separate">("main");
   const [saving, setSaving] = useState(false);
+  // Questionnaire
+  const [questions, setQuestions] = useState<string[]>(["Чому хочеш вступити у фракцію?", "Який у тебе досвід в RP?"]);
+  const [newQuestion, setNewQuestion] = useState("");
+
+  const addQuestion = () => {
+    if (!newQuestion.trim()) return;
+    setQuestions([...questions, newQuestion.trim()]);
+    setNewQuestion("");
+  };
+  const removeQuestion = (i: number) => setQuestions(questions.filter((_, j) => j !== i));
+
   const add = async () => {
     if (!name) return toast.error("Вкажіть назву");
     setSaving(true);
+    // Save questionnaire as JSON in gradient field (extended)
+    const meta = JSON.stringify({ questions });
     const ok = await store.addFaction(name, color, logoUrl || undefined, gradient || undefined, section);
+    if (ok) {
+      // Also save questions to localStorage for FactionDetail to read
+      localStorage.setItem(`crp_faction_questions_${name.toLowerCase()}`, meta);
+      setName(""); setColor("#22c55e"); setLogoUrl(""); setGradient("");
+      setQuestions(["Чому хочеш вступити у фракцію?", "Який у тебе досвід в RP?"]);
+      toast.success(`Фракцію "${name}" додано з анкетою!`);
+    } else toast.error("Помилка збереження");
     setSaving(false);
-    if (ok) { setName(""); setColor("#22c55e"); setLogoUrl(""); setGradient(""); toast.success(`Фракцію "${name}" додано! Оновіть сторінку фракцій.`); }
-    else toast.error("Помилка збереження");
   };
+
   return (
     <div className="space-y-4 animate-fade-in">
       <NeonCard glowColor="lime">
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Section */}
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">Розділ</label>
             <div className="flex gap-2">
@@ -859,14 +978,49 @@ const AddFactionTab = () => {
               ))}
             </div>
           </div>
+
+          {/* Name + logo */}
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Назва фракції" className={inputClass} />
-          <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Логотип (https://...)" className={inputClass} />
-          {logoUrl && <img src={logoUrl} alt="" className="w-12 h-12 object-cover rounded-xl" onError={e => (e.currentTarget.style.display = "none")} />}
-          <div className="flex items-center gap-3">
-            <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-12 h-10 rounded-xl cursor-pointer border-0 bg-transparent" />
-            <input value={color} onChange={e => setColor(e.target.value)} placeholder="#22c55e" className={`${inputClass} flex-1`} />
+          <div className="flex gap-2">
+            <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Логотип (https://...)" className={`${inputClass} flex-1`} />
+            {logoUrl && <img src={logoUrl} alt="" className="w-10 h-10 object-cover rounded-xl shrink-0" onError={e => (e.currentTarget.style.display = "none")} />}
           </div>
-          <input value={gradient} onChange={e => setGradient(e.target.value)} placeholder="Градієнт: linear-gradient(...)" className={inputClass} />
+
+          {/* Gradient builder */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block font-semibold">🎨 Градієнт банера</label>
+            <GradientBuilder onChange={(g, c) => { setGradient(g); setColor(c); }} />
+          </div>
+
+          {/* Questionnaire */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block font-semibold">📋 Анкета вступу</label>
+            <div className="space-y-2 mb-2">
+              {questions.map((q, i) => (
+                <div key={i} className="flex items-center gap-2 liquid-glass rounded-xl px-3 py-2">
+                  <span className="text-[10px] text-primary font-bold w-4 shrink-0">{i + 1}.</span>
+                  <span className="text-xs text-foreground flex-1">{q}</span>
+                  <button onClick={() => removeQuestion(i)} className="text-muted-foreground hover:text-destructive transition-colors text-xs">✕</button>
+                </div>
+              ))}
+            </div>
+            {/* Presets */}
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {FACTION_QUESTIONS_PRESETS.filter(p => !questions.includes(p)).slice(0, 4).map(p => (
+                <button key={p} onClick={() => setQuestions([...questions, p])}
+                  className="text-[9px] px-2 py-1 rounded-lg liquid-glass text-muted-foreground hover:text-primary transition-colors">
+                  + {p.slice(0, 24)}...
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input value={newQuestion} onChange={e => setNewQuestion(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addQuestion()}
+                placeholder="Своє питання..." className={`${inputClass} flex-1 text-xs py-2`} />
+              <button onClick={addQuestion} className="liquid-glass px-3 py-2 rounded-xl text-xs text-primary active:scale-95">+</button>
+            </div>
+          </div>
+
           <GradientButton variant="green" className="w-full text-xs py-2" onClick={add} disabled={saving}>
             {saving ? "Зберігаю..." : "Додати фракцію"}
           </GradientButton>
