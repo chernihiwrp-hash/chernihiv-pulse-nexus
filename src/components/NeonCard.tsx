@@ -8,26 +8,33 @@ interface NeonCardProps {
   style?: React.CSSProperties;
 }
 
-const hoverGlow: Record<string, string> = {
-  green: "hover:shadow-[0_0_20px_hsl(142,71%,45%,0.25)]",
-  lime: "hover:shadow-[0_0_20px_hsl(84,81%,44%,0.25)]",
-  yellow: "hover:shadow-[0_0_20px_hsl(45,100%,55%,0.25)]",
-  red: "hover:shadow-[0_0_20px_hsl(0,70%,50%,0.25)]",
-};
-
-const hoverBorder: Record<string, string> = {
-  green: "hover:border-secondary/25",
-  lime: "hover:border-primary/25",
-  yellow: "hover:border-neon-yellow/25",
-  red: "hover:border-neon-red/25",
+const glowColors = {
+  green: { color: "hsl(142,71%,45%)", hover: "hsl(142,71%,45%,0.3)", border: "hsl(142,71%,45%,0.2)" },
+  lime: { color: "hsl(84,81%,44%)", hover: "hsl(84,81%,44%,0.3)", border: "hsl(84,81%,44%,0.2)" },
+  yellow: { color: "hsl(45,100%,55%)", hover: "hsl(45,100%,55%,0.3)", border: "hsl(45,100%,55%,0.2)" },
+  red: { color: "hsl(0,70%,50%)", hover: "hsl(0,70%,50%,0.3)", border: "hsl(0,70%,50%,0.2)" },
 };
 
 const NeonCard = ({ children, className = "", onClick, glowColor = "lime", style }: NeonCardProps) => {
+  const g = glowColors[glowColor];
+
   return (
     <div
       onClick={onClick}
       style={style}
-      className={`liquid-glass-card rounded-2xl p-4 card-press ripple-effect cursor-pointer transition-all duration-300 ${hoverGlow[glowColor]} ${hoverBorder[glowColor]} ${className}`}
+      className={`liquid-glass-card rounded-2xl p-4 card-press ripple-effect transition-all duration-300 ${onClick ? "cursor-pointer" : ""} ${className}`}
+      onMouseEnter={e => {
+        if (onClick) {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 20px ${g.hover}, inset 0 1px 0 hsl(0 0% 100% / 0.1)`;
+          (e.currentTarget as HTMLDivElement).style.borderColor = g.border;
+          (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+        }
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "";
+        (e.currentTarget as HTMLDivElement).style.transform = "";
+      }}
     >
       {children}
     </div>
