@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "./components/BottomNav";
+import Particles from "./components/Particles";
 import Index from "./pages/Index";
 import Factions from "./pages/Factions";
 import FactionDetail from "./pages/FactionDetail";
@@ -34,7 +35,9 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
-        <div className="max-w-lg mx-auto relative">
+        {/* Частинки що летять вгору — фіксовано на весь екран */}
+        <Particles />
+        <div className="max-w-lg mx-auto relative" style={{ zIndex: 1 }}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/news" element={<News />} />
