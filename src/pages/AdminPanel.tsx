@@ -45,6 +45,13 @@ type TabId =
   "news" | "houses" | "wanted" | "election" | "documents" |
   "add_faction" | "voice" | "tokens" | "manage_factions";
 
+// Права за замовчуванням — усі вимкнені для звичайних адмінів
+const DEFAULT_NO_PERMS: Record<TabId, boolean> = {
+  sos: false, applications: false, factions: false, licenses: false,
+  house_requests: false, news: false, houses: false, wanted: false,
+  election: false, documents: false, add_faction: false, voice: false, tokens: false,
+  manage_factions: false,
+};
 const DEFAULT_PERMS: Record<TabId, boolean> = {
   sos: true, applications: true, factions: true, licenses: true,
   house_requests: true, news: true, houses: true, wanted: true,
@@ -53,13 +60,29 @@ const DEFAULT_PERMS: Record<TabId, boolean> = {
 };
 
 const getAdminPerms = (nick: string): Record<TabId, boolean> => {
+  // Читаємо з localStorage (кеш) — синхронно для рендеру
   try {
     const s = localStorage.getItem(`crp_perms_${normalizeNick(nick)}`);
-    return s ? { ...DEFAULT_PERMS, ...JSON.parse(s) } : { ...DEFAULT_PERMS };
-  } catch { return { ...DEFAULT_PERMS }; }
+    return s ? { ...DEFAULT_PERMS, ...JSON.parse(s) } : DEFAULT_NO_PERMS;
+  } catch { return DEFAULT_NO_PERMS; }
 };
-const saveAdminPerms = (nick: string, perms: Record<TabId, boolean>) =>
+const saveAdminPerms = async (nick: string, perms: Record<TabId, boolean>) => {
+  // Зберігаємо в Supabase І в localStorage (для швидкого доступу)
   localStorage.setItem(`crp_perms_${normalizeNick(nick)}`, JSON.stringify(perms));
+  await supabase.from("admin_perms").upsert(
+    { username: normalizeNick(nick), perms, updated_at: new Date().toISOString() },
+    { onConflict: "username" }
+  );
+};
+const loadAdminPermsFromDB = async (nick: string): Promise<Record<TabId, boolean>> => {
+  const { data } = await supabase.from("admin_perms").select("perms").eq("username", normalizeNick(nick)).maybeSingle();
+  if (data?.perms) {
+    const p = { ...DEFAULT_PERMS, ...(data.perms as Record<TabId, boolean>) };
+    localStorage.setItem(`crp_perms_${normalizeNick(nick)}`, JSON.stringify(p));
+    return p;
+  }
+  return DEFAULT_NO_PERMS;
+};
 
 // ─── TAB LIST ─────────────────────────────────────────────────────────────────
 type Tab = TabId | "superadmin" | "restrictions";
@@ -88,7 +111,16 @@ const AdminPanel = () => {
   const [tab, setTab] = useState<Tab | null>(null);
   const superAdmin = isSuperAdmin();
   const nick = localStorage.getItem("crp_nick") || "";
-  const perms = superAdmin ? DEFAULT_PERMS : getAdminPerms(nick);
+  const [perms, setPerms] = useState<Record<TabId, boolean>>(
+    superAdmin ? DEFAULT_PERMS : getAdminPerms(nick)
+  );
+
+  // Завантажуємо актуальні права з Supabase при кожному відкритті
+  useEffect(() => {
+    if (superAdmin) return;
+    loadAdminPermsFromDB(nick).then(p => setPerms(p));
+  }, [nick, superAdmin]);
+
   const allowedTabs = TAB_LIST.filter(t => superAdmin || perms[t.id]);
 
   // Тільки t1kron1x має доступ
@@ -278,13 +310,18 @@ const SuperAdminTab = () => {
 
   const filtered = admins.filter(a => a.nick.toLowerCase().includes(search.toLowerCase()));
 
-  const openEdit = (nick: string) => { setSelectedNick(nick); setEditPerms(getAdminPerms(nick)); };
-  const savePerms = () => {
+  const openEdit = async (nick: string) => {
+    setSelectedNick(nick);
+    // Завантажуємо актуальні права з Supabase
+    const perms = await loadAdminPermsFromDB(nick);
+    setEditPerms(perms);
+  };
+  const savePerms = async () => {
     if (!selectedNick) return;
-    saveAdminPerms(selectedNick, editPerms);
+    await saveAdminPerms(selectedNick, editPerms);
     setAdmins(prev => prev.map(a => a.nick === selectedNick ? { ...a, perms: editPerms } : a));
     setSelectedNick(null);
-    toast.success(`Права для ${selectedNick} збережено!`);
+    toast.success(`Права для ${selectedNick} збережено в базі!`);
   };
   const toggleAll = (on: boolean) => {
     const p = {} as Record<TabId, boolean>;
@@ -794,7 +831,7 @@ const FactionAppsTab = () => {
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateFactionAppStatus(id, status);
     const app = apps.find(a => a.id === id);
-    store.addNotification(`Заявка у ${app?.factionName} ${status === "approved" ? "схвалена" : "відхилена"}`);
+    if (app?.nick) store.addNotification(app.nick, `Заявка у ${app.factionName} ${status === "approved" ? "✅ схвалена" : "❌ відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
@@ -910,7 +947,7 @@ const AdminAppsTab = () => {
 
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateAdminAppStatus(id, status);
-    store.addNotification(`Заявка на адміна ${status === "approved" ? "схвалена" : "відхилена"}`);
+    const appA = apps.find(a => a.id === id); if (appA?.nick) store.addNotification(appA.nick, `Заявка на адміністратора ${status === "approved" ? "✅ схвалена" : "❌ відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
@@ -1116,7 +1153,7 @@ const GradientBuilder = ({ onChange }: { onChange: (gradient: string, color: str
 const AddFactionTab = () => {
   const [name, setName] = useState("");
   const [color, setColor] = useState("#22c55e");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("icon:0"); // icon:N = built-in icon
   const [gradient, setGradient] = useState("");
   const [section, setSection] = useState<"main" | "separate">("main");
   const [saving, setSaving] = useState(false);
@@ -1161,11 +1198,29 @@ const AddFactionTab = () => {
             </div>
           </div>
 
-          {/* Name + logo */}
+          {/* Name */}
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Назва фракції" className={inputClass} />
-          <div className="flex gap-2">
-            <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Логотип (https://...)" className={`${inputClass} flex-1`} />
-            {logoUrl && <img src={logoUrl} alt="" className="w-10 h-10 object-cover rounded-xl shrink-0" onError={e => (e.currentTarget.style.display = "none")} />}
+
+          {/* Icon picker */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block font-semibold flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5" /> Іконка фракції
+            </label>
+            <div className="grid grid-cols-6 gap-2">
+              {([
+                Shield, Swords, AlertTriangle, Car, FileText, Users,
+                Building2, MessageSquare, Crosshair, Gavel, Coins, ShieldCheck,
+                Crown, Lock, Star, Zap, Eye, Search,
+              ] as const).map((Icon, i) => (
+                <button key={i} type="button"
+                  onClick={() => setLogoUrl(`icon:${i}`)}
+                  className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 ${
+                    logoUrl === `icon:${i}` ? "bg-primary/20 border border-primary/40" : "liquid-glass hover:border-primary/20"
+                  }`}>
+                  <Icon className={`w-5 h-5 ${logoUrl === `icon:${i}` ? "text-primary" : "text-muted-foreground"}`} />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Gradient builder */}
@@ -1422,7 +1477,7 @@ const RestrictionsTab = () => {
 
   const save = () => {
     if (!found) return;
-    saveAdminPerms(found.nick, editPerms);
+    await saveAdminPerms(found.nick, editPerms);
     setFound({ ...found, perms: editPerms });
     toast.success(`Обмеження для ${found.nick} збережено!`);
   };
@@ -1532,7 +1587,7 @@ const ManageFactionsTab = () => {
 
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateFactionAppStatus(id, status);
-    store.addNotification(`Заявка у фракцію ${status === "approved" ? "схвалена" : "відхилена"}`);
+    // notification handled above
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
