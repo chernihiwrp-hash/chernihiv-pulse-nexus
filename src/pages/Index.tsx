@@ -10,7 +10,6 @@ import PulseCity from "../components/PulseCity";
 import GradientButton from "../components/GradientButton";
 import { toast } from "sonner";
 import { store } from "../lib/store";
-import { useBadges } from "../hooks/useBadges";
 
 const ROBLOX_URL = "https://www.roblox.com/games/start?placeId=7711635737&launchData=joinCode%3D5319vick";
 const SERVER_CODE = "5319vick";
@@ -55,7 +54,20 @@ const Index = () => {
   const [sosNick, setSosNick] = useState("");
   const [copied, setCopied] = useState(false);
   const [sosSending, setSosSending] = useState(false);
-  const { badges, markNewsRead } = useBadges();
+  const [hasNewNews, setHasNewNews] = useState(false);
+
+  // Перевіряємо нові новини
+  useEffect(() => {
+    const lastSeen = parseInt(localStorage.getItem("crp_news_seen") || "0");
+    import("../lib/store").then(({ supabase }) => {
+      supabase.from("news").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle()
+        .then(({ data }) => {
+          if (data?.created_at) {
+            setHasNewNews(new Date(data.created_at).getTime() > lastSeen);
+          }
+        });
+    });
+  }, []);
 
   const handleSos = async () => {
     if (!sosDesc.trim()) return toast.error("Опишіть ситуацію");
@@ -195,7 +207,7 @@ const Index = () => {
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
                   <div className="relative w-10 h-10 rounded-xl bg-primary/10 border border-primary/12 flex items-center justify-center shrink-0">
                     <item.icon className="w-5 h-5 text-primary" />
-                    {(item as {badge?: boolean}).badge && badges.news && (
+                    {(item as {badge?: boolean}).badge && hasNewNews && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse"
                         style={{ boxShadow: "0 0 8px hsl(var(--primary))" }} />
                     )}
