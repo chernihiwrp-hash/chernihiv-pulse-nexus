@@ -1,38 +1,30 @@
-import { useState } from "react";
-import { Palette, Check, Zap, Home, Star, Crown, Droplets } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import GradientButton from "../components/GradientButton";
+import { useState, useEffect } from "react";
+import { Palette, Check, Zap, Lock, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, subtractBalance } from "../lib/store";
-
-type Theme = {
-  id: string; name: string; price: number;
-  color: string; gradient: string; icon: typeof Zap; desc: string;
-};
-
-const themes: Theme[] = [
-  { id: "green",  name: "Стандартна", price: 0,   color: "hsl(84 81% 44%)",   gradient: "linear-gradient(135deg,#4ade80,#22c55e)",   icon: Zap,      desc: "Базова зелена тема" },
-  { id: "gold",   name: "Золота",     price: 500,  color: "hsl(45 100% 55%)",  gradient: "linear-gradient(135deg,#fbbf24,#f59e0b)",   icon: Crown,    desc: "Преміум золота тема" },
-  { id: "blue",   name: "Синя",       price: 300,  color: "hsl(210 100% 60%)", gradient: "linear-gradient(135deg,#60a5fa,#3b82f6)",   icon: Droplets, desc: "Холодна синя тема" },
-  { id: "red",    name: "Червона",    price: 400,  color: "hsl(0 80% 55%)",    gradient: "linear-gradient(135deg,#f87171,#ef4444)",   icon: Zap,      desc: "Агресивна червона тема" },
-  { id: "white",  name: "Біла",       price: 600,  color: "hsl(0 0% 90%)",     gradient: "linear-gradient(135deg,#f1f5f9,#e2e8f0)",   icon: Star,     desc: "Чиста біла тема" },
-];
+import { getBalance, addBalance } from "../lib/store";
+import { THEMES, applyTheme, type ThemeId } from "./Shop";
 
 const Casino = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"themes" | "houses">("themes");
   const nick = localStorage.getItem("crp_nick") || "";
-
-  const [owned, setOwned] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("crp_owned_themes") || '["green"]'); } catch { return ["green"]; }
-  });
-  const [current, setCurrent] = useState(() => localStorage.getItem("crp_theme") || "green");
   const [balance, setBalance] = useState(() => getBalance(nick));
+  const [currentTheme, setCurrentTheme] = useState<ThemeId>(
+    () => (localStorage.getItem("crp_theme") as ThemeId) || "lime"
+  );
+  const [ownedThemes, setOwnedThemes] = useState<ThemeId[]>(() => {
+    try { return JSON.parse(localStorage.getItem(`crp_owned_themes_${nick}`) || '["lime"]'); }
+    catch { return ["lime"]; }
+  });
 
-  const buyTheme = (theme: Theme) => {
-    if (owned.includes(theme.id)) {
-      setCurrent(theme.id);
-      localStorage.setItem("crp_theme", theme.id);
+  useEffect(() => {
+    const update = () => setBalance(getBalance(nick));
+    window.addEventListener("focus", update);
+    return () => window.removeEventListener("focus", update);
+  }, [nick]);
+
+  const buyOrActivate = (theme: typeof THEMES[0]) => {
+    if (ownedThemes.includes(theme.id)) {
+      applyTheme(theme);
+      setCurrentTheme(theme.id);
       toast.success(`Тему "${theme.name}" активовано!`);
       return;
     }
@@ -40,126 +32,122 @@ const Casino = () => {
       toast.error(`Недостатньо CR! Потрібно ${theme.price} CR`);
       return;
     }
-    const ok = subtractBalance(nick, theme.price);
-    if (!ok) return toast.error("Недостатньо CR!");
-    const newBal = getBalance(nick);
-    setBalance(newBal);
-    const newOwned = [...owned, theme.id];
-    setOwned(newOwned);
-    localStorage.setItem("crp_owned_themes", JSON.stringify(newOwned));
-    setCurrent(theme.id);
-    localStorage.setItem("crp_theme", theme.id);
-    toast.success(`Тему "${theme.name}" куплено! -${theme.price} CR`);
+    addBalance(nick, -theme.price);
+    setBalance(getBalance(nick));
+    const newOwned = [...ownedThemes, theme.id];
+    setOwnedThemes(newOwned);
+    localStorage.setItem(`crp_owned_themes_${nick}`, JSON.stringify(newOwned));
+    applyTheme(theme);
+    setCurrentTheme(theme.id);
+    toast.success(`Тему "${theme.name}" куплено та активовано!`);
   };
 
   return (
     <div className="min-h-screen pb-20 px-4 pt-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="font-display text-xl font-bold tracking-wider neon-text-lime">МАГАЗИН</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Теми та нерухомість</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Теми інтерфейсу</p>
         </div>
         <div className="flex items-center gap-1.5 liquid-glass px-3 py-2 rounded-xl"
-          style={{ border: "1px solid hsl(84 81% 44% / 0.2)" }}>
+          style={{ border: "1px solid hsl(var(--primary) / 0.2)" }}>
           <Zap className="w-3.5 h-3.5 text-primary" />
           <span className="text-sm font-bold text-primary">{balance} CR</span>
         </div>
       </div>
 
-      {/* Tabs — тільки 2 */}
-      <div className="flex gap-2 mb-5">
-        {([
-          { id: "themes", label: "Теми", icon: Palette },
-          { id: "houses", label: "Будинки", icon: Home },
-        ] as const).map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium border transition-all ${
-              activeTab === t.id ? "bg-primary/20 border-primary/30 text-primary" : "liquid-glass text-muted-foreground"
-            }`}>
-            <t.icon className="w-3.5 h-3.5" /> {t.label}
-          </button>
-        ))}
-      </div>
+      <p className="text-[11px] text-muted-foreground text-center mb-4 px-4">
+        Теми змінюють акцентний колір усього інтерфейсу. Заробляй CR щодня та купуй нові теми.
+      </p>
 
-      {/* THEMES */}
-      {activeTab === "themes" && (
-        <div className="space-y-3 animate-fade-in">
-          <p className="text-xs text-muted-foreground">Оберіть тему інтерфейсу</p>
-          {themes.map((theme, i) => {
-            const isOwned = owned.includes(theme.id);
-            const isActive = current === theme.id;
-            const Icon = theme.icon;
-            return (
-              <div key={theme.id} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="rounded-2xl overflow-hidden" style={{
-                  background: isActive ? theme.color.replace("hsl(","hsl(").replace(")","/0.08)") : "hsl(0 0% 0% / 0.4)",
-                  border: `1px solid ${isActive ? theme.color.replace(")","/0.3)") : "hsl(0 0% 100% / 0.07)"}`,
-                  backdropFilter: "blur(20px)"
-                }}>
-                  <div className="flex items-center gap-3 p-4">
-                    <div className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center"
-                      style={{ background: theme.gradient, boxShadow: `0 0 16px ${theme.color.replace(")","/0.3)")}` }}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{theme.name}</p>
-                        {isActive && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-md font-medium"
-                            style={{ background: theme.color.replace(")","/0.15)"), color: theme.color, border: `1px solid ${theme.color.replace(")","/0.25)")}` }}>
-                            Активна
-                          </span>
-                        )}
+      <div className="space-y-3">
+        {THEMES.map((theme, i) => {
+          const isOwned = ownedThemes.includes(theme.id);
+          const isActive = currentTheme === theme.id;
+          return (
+            <div key={theme.id} className="animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
+              <div
+                className="rounded-2xl p-4 transition-all"
+                style={{
+                  background: isActive
+                    ? `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.04))`
+                    : "linear-gradient(135deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.015))",
+                  border: `1px solid ${isActive ? "hsl(var(--primary) / 0.4)" : "hsl(0 0% 100% / 0.08)"}`,
+                  boxShadow: isActive ? "0 0 20px hsl(var(--primary) / 0.15)" : "none",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Color swatch */}
+                  <div className="w-14 h-14 rounded-xl shrink-0 relative overflow-hidden"
+                    style={{ background: theme.preview, border: "2px solid hsl(0 0% 100% / 0.15)" }}>
+                    {isActive && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Check className="w-6 h-6 text-white drop-shadow-lg" />
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{theme.desc}</p>
-                    </div>
-                    <div className="shrink-0">
-                      {theme.price === 0 || isOwned ? (
-                        <button onClick={() => buyTheme(theme)} disabled={isActive}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${isActive ? "opacity-50 cursor-default" : "active:scale-95"}`}
-                          style={{ background: isActive ? "hsl(0 0% 100% / 0.05)" : theme.color.replace(")","/0.15)"), border: `1px solid ${theme.color.replace(")","/0.25)")}`, color: isActive ? "hsl(0 0% 50%)" : theme.color }}>
-                          {isActive ? <><Check className="w-3 h-3" /> Активна</> : "Обрати"}
-                        </button>
-                      ) : (
-                        <button onClick={() => buyTheme(theme)}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold active:scale-95 text-white"
-                          style={{ background: theme.gradient, boxShadow: `0 0 12px ${theme.color.replace(")","/0.3)")}` }}>
-                          <Zap className="w-3 h-3" /> {theme.price} CR
-                        </button>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-sm font-bold text-foreground">{theme.name}</p>
+                      {isActive && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold"
+                          style={{ background: "hsl(var(--primary) / 0.15)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary) / 0.25)" }}>
+                          АКТИВНА
+                        </span>
+                      )}
+                      {isOwned && !isActive && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold bg-white/8 text-muted-foreground border border-white/10">
+                          КУПЛЕНА
+                        </span>
                       )}
                     </div>
+                    <p className="text-[10px] text-muted-foreground">{theme.description}</p>
+                    {theme.price > 0 && !isOwned && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Ціна: <span className="text-primary font-bold">{theme.price} CR</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action button */}
+                  <div className="shrink-0">
+                    {theme.price === 0 || isOwned ? (
+                      <button
+                        onClick={() => buyOrActivate(theme)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                          isActive
+                            ? "text-primary border border-primary/20"
+                            : "liquid-glass text-foreground hover:border-primary/30"
+                        }`}
+                        style={isActive ? { background: "hsl(var(--primary) / 0.1)" } : {}}>
+                        {isActive ? "Активна" : "Вибрати"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => buyOrActivate(theme)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+                        style={{
+                          background: balance >= theme.price ? theme.preview : "hsl(0 0% 100% / 0.06)",
+                          border: "1px solid hsl(0 0% 100% / 0.15)",
+                          color: balance >= theme.price ? "#fff" : "hsl(0 0% 40%)",
+                        }}>
+                        {balance < theme.price
+                          ? <Lock className="w-3 h-3" />
+                          : <ShoppingCart className="w-3 h-3" />
+                        }
+                        {theme.price} CR
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* HOUSES */}
-      {activeTab === "houses" && (
-        <div className="animate-fade-in">
-          <div className="rounded-2xl overflow-hidden"
-            style={{ background: "hsl(0 0% 0% / 0.4)", border: "1px solid hsl(0 0% 100% / 0.07)", backdropFilter: "blur(20px)" }}>
-            <div className="px-4 py-3 border-b flex items-center gap-3" style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}>
-              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center">
-                <Home className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Нерухомість</p>
-                <p className="text-[10px] text-muted-foreground">Будинки на продаж</p>
-              </div>
             </div>
-            <div className="p-4 text-center py-8">
-              <Home className="w-10 h-10 text-muted-foreground opacity-20 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">Переглядайте доступні будинки</p>
-              <GradientButton variant="green" className="text-xs py-2 px-6" onClick={() => navigate("/houses")}>
-                Переглянути будинки
-              </GradientButton>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 };
