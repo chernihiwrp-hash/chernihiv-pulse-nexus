@@ -25,20 +25,20 @@ const menuSections = [
     ],
   },
   {
-    label: "⚖️ Дозволи",
+    label: "Дозволи",
     items: [
       { icon: FileText, label: "Ліцензії", desc: "Зброя та дозволи", path: "/licenses" },
       { icon: Car, label: "Номери авто", desc: "Реєстрація транспорту", path: "/car-registration" },
     ],
   },
   {
-    label: "🏠 Нерухомість",
+    label: "Нерухомість",
     items: [
       { icon: Home, label: "Будинки", desc: "Нерухомість міста", path: "/houses" },
     ],
   },
   {
-    label: "⚠️ Безпека",
+    label: "Безпека",
     items: [
       { icon: Search, label: "Розшук", desc: "Список розшукуваних", path: "/wanted", red: true },
       { icon: Shield, label: "Фракції", desc: "Державні та кримінальні", path: "/factions" },
