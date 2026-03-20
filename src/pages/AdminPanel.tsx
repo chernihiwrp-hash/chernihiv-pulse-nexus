@@ -43,12 +43,13 @@ const isSuperAdmin = () =>
 type TabId =
   "sos" | "applications" | "factions" | "licenses" | "house_requests" |
   "news" | "houses" | "wanted" | "election" | "documents" |
-  "add_faction" | "voice" | "tokens";
+  "add_faction" | "voice" | "tokens" | "manage_factions";
 
 const DEFAULT_PERMS: Record<TabId, boolean> = {
   sos: true, applications: true, factions: true, licenses: true,
   house_requests: true, news: true, houses: true, wanted: true,
   election: true, documents: true, add_faction: true, voice: true, tokens: true,
+  manage_factions: true,
 };
 
 const getAdminPerms = (nick: string): Record<TabId, boolean> => {
@@ -61,7 +62,7 @@ const saveAdminPerms = (nick: string, perms: Record<TabId, boolean>) =>
   localStorage.setItem(`crp_perms_${normalizeNick(nick)}`, JSON.stringify(perms));
 
 // ─── TAB LIST ─────────────────────────────────────────────────────────────────
-type Tab = TabId | "superadmin";
+type Tab = TabId | "superadmin" | "restrictions";
 
 const TAB_LIST: { id: TabId; label: string; icon: typeof Newspaper; sub: string; danger?: boolean }[] = [
   { id: "sos",           label: "SOS Сигнали",          icon: AlertTriangle, sub: "Realtime",    danger: true },
@@ -77,6 +78,7 @@ const TAB_LIST: { id: TabId; label: string; icon: typeof Newspaper; sub: string;
   { id: "add_faction",   label: "Додати фракцію",        icon: ShieldAlert,   sub: "Управління" },
   { id: "voice",         label: "Голос міста",           icon: Megaphone,     sub: "Управління" },
   { id: "tokens",        label: "Токени CR",             icon: Coins,         sub: "Фінанси" },
+  { id: "manage_factions",label: "Управління фракціями",   icon: ShieldAlert,   sub: "Фракції" },
 ];
 
 const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent";
@@ -91,6 +93,26 @@ const AdminPanel = () => {
 
   // ── TAB CONTENT ──
   if (tab) {
+    if (tab === "restrictions") {
+      return (
+        <div className="min-h-screen pb-20 px-4 pt-4">
+          <div className="flex items-center gap-3 mb-5">
+            <button onClick={() => setTab(null)} className="w-9 h-9 rounded-xl liquid-glass flex items-center justify-center active:scale-95">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "hsl(0 70% 50% / 0.15)", border: "1px solid hsl(0 70% 50% / 0.3)" }}>
+              <Lock className="w-4 h-4 text-destructive" />
+            </div>
+            <div>
+              <h1 className="font-display text-sm font-bold tracking-wider text-destructive">ОБМЕЖЕННЯ АДМІНІВ</h1>
+              <p className="text-[10px] text-muted-foreground">Управління доступом</p>
+            </div>
+          </div>
+          <RestrictionsTab />
+        </div>
+      );
+    }
+
     if (tab === "superadmin" && superAdmin) {
       return (
         <div className="min-h-screen pb-20 px-4 pt-4">
@@ -143,6 +165,7 @@ const AdminPanel = () => {
         {tab === "licenses"      && <LicensesTab />}
         {tab === "house_requests"&& <HouseRequestsTab />}
         {tab === "add_faction"   && <AddFactionTab />}
+        {tab === "manage_factions" && <ManageFactionsTab />}
       </div>
     );
   }
@@ -171,6 +194,9 @@ const AdminPanel = () => {
           </div>
         </div>
       )}
+
+      {/* Restrictions panel button */}
+      <RestrictionsButton onOpen={() => setTab("restrictions")} />
 
       <div className="space-y-2 animate-fade-in">
         {allowedTabs.map((t, i) => (
@@ -990,6 +1016,331 @@ const VoiceTab = () => {
           </div>
         </NeonCard>
       ))}
+    </div>
+  );
+};
+
+
+// ─── RESTRICTIONS BUTTON ─────────────────────────────────────────────────────
+const RESTRICT_CODE = "son5319";
+
+const RestrictionsButton = ({ onOpen }: { onOpen: () => void }) => {
+  const [show, setShow] = useState(false);
+  const [code, setCode] = useState("");
+  if (show) return (
+    <div className="mb-4 animate-fade-in">
+      <div className="rounded-2xl p-4 border border-destructive/20" style={{ background: "hsl(0 70% 50% / 0.05)" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Lock className="w-4 h-4 text-destructive" />
+          <span className="text-sm font-semibold text-foreground">Панель обмежень</span>
+          <button onClick={() => { setShow(false); setCode(""); }} className="ml-auto text-muted-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        <input value={code} onChange={e => setCode(e.target.value)} placeholder="Код доступу"
+          type="password" className="w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-destructive/30 bg-transparent mb-3"
+          onKeyDown={e => { if (e.key === "Enter" && code === RESTRICT_CODE) { setShow(false); setCode(""); onOpen(); } }} />
+        <GradientButton variant="danger" className="w-full text-xs py-2" onClick={() => {
+          if (code === RESTRICT_CODE) { setShow(false); setCode(""); onOpen(); }
+          else { toast.error("Невірний код"); setCode(""); }
+        }}>Увійти</GradientButton>
+      </div>
+    </div>
+  );
+  return (
+    <div className="mb-4">
+      <button onClick={() => setShow(true)}
+        className="w-full flex items-center justify-center gap-2 text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors py-1.5">
+        <Lock className="w-3 h-3" />
+        <span className="text-[9px]">Панель обмежень</span>
+      </button>
+    </div>
+  );
+};
+
+// ─── RESTRICTIONS TAB ─────────────────────────────────────────────────────────
+const RestrictionsTab = () => {
+  const [adminNick, setAdminNick] = useState("");
+  const [found, setFound] = useState<{ nick: string; perms: Record<TabId, boolean> } | null>(null);
+  const [editPerms, setEditPerms] = useState<Record<TabId, boolean>>({ ...DEFAULT_PERMS });
+  const [loading, setLoading] = useState(false);
+
+  const search = async () => {
+    if (!adminNick.trim()) return toast.error("Введіть нік адміна");
+    setLoading(true);
+    const { data } = await supabase
+      .from("admin_applications")
+      .select("*")
+      .eq("status", "approved")
+      .ilike("username", adminNick.trim());
+    setLoading(false);
+    if (!data || data.length === 0) return toast.error("Адміна не знайдено");
+    const n = (data[0] as Record<string, unknown>).username as string || adminNick.trim();
+    const perms = getAdminPerms(n);
+    setFound({ nick: n, perms });
+    setEditPerms(perms);
+    toast.success(`Знайдено: ${n}`);
+  };
+
+  const save = () => {
+    if (!found) return;
+    saveAdminPerms(found.nick, editPerms);
+    setFound({ ...found, perms: editPerms });
+    toast.success(`Обмеження для ${found.nick} збережено!`);
+  };
+
+  const toggleAll = (on: boolean) => {
+    const p = {} as Record<TabId, boolean>;
+    TAB_LIST.forEach(t => { p[t.id] = on; });
+    setEditPerms(p);
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <p className="text-xs text-muted-foreground">Введіть нік адміна щоб керувати його доступом до розділів панелі.</p>
+
+      {/* Search */}
+      <div className="flex gap-2">
+        <input value={adminNick} onChange={e => setAdminNick(e.target.value)}
+          placeholder="Нік адміна (точний)"
+          className="flex-1 liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent"
+          onKeyDown={e => e.key === "Enter" && search()} />
+        <button onClick={search} disabled={loading}
+          className="px-4 py-3 liquid-glass rounded-xl text-xs text-primary border border-primary/20 active:scale-95 whitespace-nowrap">
+          {loading ? "..." : "Знайти"}
+        </button>
+      </div>
+
+      {found && (
+        <>
+          <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
+            style={{ background: "hsl(0 70% 50% / 0.06)", border: "1px solid hsl(0 70% 50% / 0.2)" }}>
+            <div className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+              <UserCheck className="w-4 h-4 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">{found.nick}</p>
+              <p className="text-[10px] text-muted-foreground">
+                Активних розділів: {Object.values(editPerms).filter(Boolean).length}/{TAB_LIST.length}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => toggleAll(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs border border-primary/25 bg-primary/10 text-primary active:scale-95">
+              <Eye className="w-3.5 h-3.5" /> Всі ввімкнути
+            </button>
+            <button onClick={() => toggleAll(false)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs border border-destructive/25 bg-destructive/10 text-destructive active:scale-95">
+              <EyeOff className="w-3.5 h-3.5" /> Всі вимкнути
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {TAB_LIST.map(t => (
+              <div key={t.id} className="liquid-glass-card rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${t.danger ? "bg-destructive/10 border border-destructive/20" : "bg-primary/10 border border-primary/15"}`}>
+                    <t.icon className={`w-4 h-4 ${t.danger ? "text-destructive" : "text-primary"}`} />
+                  </div>
+                  <span className="text-sm font-medium">{t.label}</span>
+                </div>
+                <button onClick={() => setEditPerms(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                  className={`relative w-12 h-6 rounded-full transition-all ${editPerms[t.id] ? "bg-primary" : "bg-muted/40"}`}
+                  style={{ boxShadow: editPerms[t.id] ? "0 0 10px hsl(84 81% 44% / 0.4)" : "none" }}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${editPerms[t.id] ? "left-7" : "left-1"}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <GradientButton variant="danger" className="w-full" onClick={save}>
+            <Check className="w-4 h-4 inline mr-2" /> Зберегти обмеження
+          </GradientButton>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── MANAGE FACTIONS TAB ─────────────────────────────────────────────────────
+const ManageFactionsTab = () => {
+  const [factions, setFactions] = useState<{ id: number; name: string; color: string; section: string }[]>([]);
+  const [apps, setApps] = useState<FactionApplication[]>([]);
+  const [activeSection, setActiveSection] = useState<"factions" | "apps">("factions");
+  const [loading, setLoading] = useState(true);
+
+  // Форма анкети
+  const [formFactionId, setFormFactionId] = useState("");
+  const [formTitle, setFormTitle] = useState("");
+  const [formFields, setFormFields] = useState<string[]>(["Нік", "Roblox", "Вік", "Telegram", "Досвід", "Чому хочу вступити"]);
+  const [newField, setNewField] = useState("");
+  const [showFormEditor, setShowFormEditor] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: f } = await supabase.from("factions").select("*").order("created_at", { ascending: true });
+      setFactions((f || []) as { id: number; name: string; color: string; section: string }[]);
+      setLoading(false);
+    };
+    load();
+    store.getFactionApps().then(setApps);
+  }, []);
+
+  const deleteFaction = async (id: number, name: string) => {
+    await store.deleteFaction(id);
+    setFactions(prev => prev.filter(f => f.id !== id));
+    toast.success(`Фракцію "${name}" видалено`);
+  };
+
+  const decide = async (id: number, status: "approved" | "rejected") => {
+    await store.updateFactionAppStatus(id, status);
+    store.addNotification(`Заявка у фракцію ${status === "approved" ? "схвалена" : "відхилена"}`);
+    setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
+  };
+
+  const saveForm = () => {
+    if (!formFactionId || !formTitle) return toast.error("Заповніть поля");
+    const formConfig = { title: formTitle, fields: formFields };
+    localStorage.setItem(`crp_form_${formFactionId}`, JSON.stringify(formConfig));
+    toast.success("Анкету збережено!");
+    setShowFormEditor(false);
+  };
+
+  const sc = { review: "bg-yellow-400/15 text-yellow-400", approved: "bg-primary/15 text-primary", rejected: "bg-destructive/15 text-destructive" };
+  const sl = { review: "На розгляді", approved: "Прийнято", rejected: "Відхилено" };
+
+  const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent";
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {([
+          { id: "factions", label: "Фракції" },
+          { id: "apps", label: `Заявки (${apps.filter(a => a.status === "review").length})` },
+        ] as const).map(t => (
+          <button key={t.id} onClick={() => setActiveSection(t.id)}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all ${activeSection === t.id ? "bg-primary/20 border-primary/30 text-primary" : "liquid-glass text-muted-foreground"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* FACTIONS LIST */}
+      {activeSection === "factions" && (
+        <div className="space-y-3">
+          {loading && <div className="text-center py-8"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>}
+          {!loading && factions.length === 0 && (
+            <div className="text-center py-10 liquid-glass-card rounded-2xl">
+              <ShieldAlert className="w-8 h-8 text-muted-foreground opacity-20 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Немає фракцій в базі</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">Додайте через "Додати фракцію"</p>
+            </div>
+          )}
+          {factions.map(f => (
+            <NeonCard key={f.id} glowColor="lime">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: f.color + "20", border: `1px solid ${f.color}40` }}>
+                    <Shield className="w-5 h-5" style={{ color: f.color }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{f.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{f.section === "main" ? "Державна" : "Кримінальна"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Редагувати анкету */}
+                  <button onClick={() => {
+                    setFormFactionId(String(f.id));
+                    const saved = localStorage.getItem(`crp_form_${f.id}`);
+                    if (saved) {
+                      const cfg = JSON.parse(saved);
+                      setFormTitle(cfg.title || f.name);
+                      setFormFields(cfg.fields || []);
+                    } else {
+                      setFormTitle(`Анкета в ${f.name}`);
+                      setFormFields(["Нік", "Roblox", "Вік", "Telegram", "Досвід", "Чому хочу вступити"]);
+                    }
+                    setShowFormEditor(true);
+                  }} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95">
+                    <Type className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Видалити */}
+                  <button onClick={() => deleteFaction(f.id, f.name)}
+                    className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </NeonCard>
+          ))}
+        </div>
+      )}
+
+      {/* APPS */}
+      {activeSection === "apps" && (
+        <div className="space-y-3">
+          {apps.length === 0 && <div className="text-center py-10 liquid-glass-card rounded-2xl"><Shield className="w-6 h-6 text-muted-foreground opacity-30 mx-auto mb-2" /><p className="text-xs text-muted-foreground">Немає заявок</p></div>}
+          {apps.map(a => (
+            <NeonCard key={a.id} glowColor="green">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1"><Users className="w-3 h-3 text-primary" /><h4 className="text-xs font-semibold">{a.nick}</h4></div>
+                  <div className="flex items-center gap-1.5"><Shield className="w-3 h-3 text-muted-foreground" /><p className="text-[10px] text-muted-foreground">{a.factionName}</p></div>
+                  <p className="text-[10px] text-muted-foreground">Roblox: {a.roblox} | Вік: {a.age} | TG: {a.telegram}</p>
+                  {a.message && <p className="text-[10px] text-muted-foreground mt-1 italic">"{a.message}"</p>}
+                  <span className={`text-[9px] px-2 py-0.5 rounded-md mt-1 inline-block ${sc[a.status]}`}>{sl[a.status]}</span>
+                </div>
+                {a.status === "review" && (
+                  <div className="flex gap-1 ml-2">
+                    <button onClick={() => decide(a.id, "approved")} className="p-1.5 rounded-lg bg-primary/15 text-primary active:scale-95"><Check className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => decide(a.id, "rejected")} className="p-1.5 rounded-lg bg-destructive/15 text-destructive active:scale-95"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
+              </div>
+            </NeonCard>
+          ))}
+        </div>
+      )}
+
+      {/* FORM EDITOR MODAL */}
+      {showFormEditor && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-4" onClick={() => setShowFormEditor(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm rounded-2xl p-5 animate-fade-in liquid-glass-strong" onClick={e => e.stopPropagation()}
+            style={{ border: "1px solid hsl(84 81% 44% / 0.2)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-primary">Редактор анкети</h3>
+              <button onClick={() => setShowFormEditor(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+            </div>
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              <input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Назва анкети" className={inputClass} />
+              <p className="text-[10px] text-muted-foreground">Поля анкети:</p>
+              {formFields.map((field, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input value={field} onChange={e => {
+                    const copy = [...formFields]; copy[i] = e.target.value; setFormFields(copy);
+                  }} className={`${inputClass} flex-1`} />
+                  <button onClick={() => setFormFields(prev => prev.filter((_, fi) => fi !== i))}
+                    className="p-2 rounded-lg bg-destructive/15 text-destructive active:scale-95 shrink-0">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Нове поле..."
+                  className={`${inputClass} flex-1`} onKeyDown={e => { if (e.key === "Enter" && newField) { setFormFields(p => [...p, newField]); setNewField(""); }}} />
+                <button onClick={() => { if (newField) { setFormFields(p => [...p, newField]); setNewField(""); }}}
+                  className="p-2 rounded-lg bg-primary/15 text-primary active:scale-95 shrink-0"><Plus className="w-4 h-4" /></button>
+              </div>
+            </div>
+            <GradientButton variant="green" className="w-full mt-4 text-xs py-2.5" onClick={saveForm}>
+              <Check className="w-3.5 h-3.5 inline mr-1.5" /> Зберегти анкету
+            </GradientButton>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
