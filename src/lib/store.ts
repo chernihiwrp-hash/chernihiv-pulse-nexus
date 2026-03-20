@@ -242,7 +242,12 @@ export const store = {
         message: app.message,
       },
     });
-    if (error) console.error("submitFactionApp error:", error);
+    if (error) {
+      console.error("submitFactionApp ERROR:", JSON.stringify(error, null, 2));
+      alert("Помилка Supabase: " + error.message + "\nCode: " + error.code + "\nDetails: " + error.details);
+    } else {
+      console.log("submitFactionApp OK");
+    }
     return !error;
   },
   updateFactionAppStatus: async (id: number, status: "approved" | "rejected") => {
@@ -293,7 +298,14 @@ export const store = {
     });
   },
   submitAdminApp: async (app: Omit<AdminApplication, "id" | "status" | "date">) => {
-    await supabase.from("admin_applications").insert({ username: app.nick, status: "pending", form_data: app });
+    const { data, error } = await supabase.from("admin_applications").insert({ username: app.nick, status: "pending", form_data: app }).select();
+    if (error) {
+      console.error("submitAdminApp ERROR:", JSON.stringify(error, null, 2));
+      alert("Помилка Supabase: " + error.message + "\nCode: " + error.code + "\nDetails: " + error.details);
+    } else {
+      console.log("submitAdminApp OK:", data);
+    }
+    return !error;
   },
   updateAdminAppStatus: async (id: number, status: "approved" | "rejected") => {
     await supabase.from("admin_applications").update({ status }).eq("id", id);
