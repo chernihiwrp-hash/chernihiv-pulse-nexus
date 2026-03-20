@@ -161,33 +161,43 @@ const App = () => {
 
   useEffect(() => {
     const restore = async () => {
-      // Спочатку перевіряємо localStorage
+      // Спочатку перевіряємо localStorage — миттєво
       const localReg = localStorage.getItem("crp_registered") === "1";
       const localNick = localStorage.getItem("crp_nick");
       if (localReg && localNick) { setRegistered(true); return; }
 
       // Якщо localStorage очистився — відновлюємо по Telegram ID
-      const tg = (window as Window & { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id: number; first_name: string; username?: string; photo_url?: string } } } } }).Telegram;
-      const tgUser = tg?.WebApp?.initDataUnsafe?.user;
-      if (tgUser?.id) {
-        const { data } = await supabase
-          .from("users")
-          .select("username")
-          .eq("telegram_id", String(tgUser.id))
-          .maybeSingle();
-        if (data?.username) {
-          localStorage.setItem("crp_registered", "1");
-          localStorage.setItem("crp_nick", data.username);
-          setRegistered(true);
-          return;
+      try {
+        const tg = (window as Window & { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id: number; first_name: string; username?: string; photo_url?: string } } } } }).Telegram;
+        const tgUser = tg?.WebApp?.initDataUnsafe?.user;
+        if (tgUser?.id) {
+          const { data } = await supabase
+            .from("users")
+            .select("username")
+            .eq("telegram_id", String(tgUser.id))
+            .maybeSingle();
+          if (data?.username) {
+            localStorage.setItem("crp_registered", "1");
+            localStorage.setItem("crp_nick", data.username);
+            setRegistered(true);
+            return;
+          }
         }
-      }
+      } catch { /* ignore network errors */ }
       setRegistered(false);
     };
-    restore();
+    // Таймаут 3 секунди — якщо Supabase не відповів, показуємо реєстрацію
+    const timeout = setTimeout(() => setRegistered(false), 3000);
+    restore().finally(() => clearTimeout(timeout));
   }, []);
 
-  if (registered === null) return null; // loading
+  // Поки перевіряємо — показуємо простий лоадер, не чорний екран
+  if (registered === null) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000" }}>
+      <div style={{ width: 32, height: 32, border: "3px solid hsl(84,81%,44%)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   if (!registered) {
     return (
