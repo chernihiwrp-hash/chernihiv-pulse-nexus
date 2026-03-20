@@ -9,6 +9,11 @@ import type { NewsItem } from "../lib/store";
 type NewsButton = { text: string; url: string; variant: "green" | "yellow" | "danger" | "cyan" };
 
 const News = () => {
+  // Позначаємо новини як переглянуті при відкритті
+  useEffect(() => {
+    localStorage.setItem("crp_news_seen", String(Date.now()));
+  }, []);
+
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
