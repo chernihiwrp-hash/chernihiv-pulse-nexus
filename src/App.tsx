@@ -52,13 +52,12 @@ const RegisterModal = ({ onDone }: { onDone: (nick: string) => void }) => {
     // Перевірка зарезервованого нікнейму T1kron1x
     const reserved = "t1kron1x";
     if (nick.trim().toLowerCase() === reserved) {
-      // Перевіряємо чи це саме той юзер
       const { data: existing } = await supabase
         .from("users")
-        .select("id")
+        .select("id, telegram_id")
         .ilike("username", "T1kron1x")
-        .single();
-      if (existing && tgUser?.id !== existing.id) {
+        .maybeSingle();
+      if (existing && tgUser && String(tgUser.id) !== existing.telegram_id) {
         alert("Цей нікнейм зарезервований!");
         setLoading(false);
         return;
@@ -71,12 +70,15 @@ const RegisterModal = ({ onDone }: { onDone: (nick: string) => void }) => {
       telegram_id: tgUser ? String(tgUser.id) : null,
       avatar_url: tgUser?.photo_url || null,
       role: "player",
+      balance: 0,
     }, { onConflict: "username" });
 
     if (!error) {
       localStorage.setItem("crp_registered", "1");
       localStorage.setItem("crp_nick", nick.trim());
       onDone(nick.trim());
+    } else {
+      alert("Помилка реєстрації: " + error.message);
     }
     setLoading(false);
   };
@@ -158,8 +160,31 @@ const App = () => {
   const [registered, setRegistered] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const isReg = localStorage.getItem("crp_registered") === "1";
-    setRegistered(isReg);
+    const restore = async () => {
+      // Спочатку перевіряємо localStorage
+      const localReg = localStorage.getItem("crp_registered") === "1";
+      const localNick = localStorage.getItem("crp_nick");
+      if (localReg && localNick) { setRegistered(true); return; }
+
+      // Якщо localStorage очистився — відновлюємо по Telegram ID
+      const tg = (window as Window & { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id: number; first_name: string; username?: string; photo_url?: string } } } } }).Telegram;
+      const tgUser = tg?.WebApp?.initDataUnsafe?.user;
+      if (tgUser?.id) {
+        const { data } = await supabase
+          .from("users")
+          .select("username")
+          .eq("telegram_id", String(tgUser.id))
+          .maybeSingle();
+        if (data?.username) {
+          localStorage.setItem("crp_registered", "1");
+          localStorage.setItem("crp_nick", data.username);
+          setRegistered(true);
+          return;
+        }
+      }
+      setRegistered(false);
+    };
+    restore();
   }, []);
 
   if (registered === null) return null; // loading
