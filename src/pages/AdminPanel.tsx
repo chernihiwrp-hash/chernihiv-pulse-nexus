@@ -43,46 +43,24 @@ const isSuperAdmin = () =>
 type TabId =
   "sos" | "applications" | "factions" | "licenses" | "house_requests" |
   "news" | "houses" | "wanted" | "election" | "documents" |
-  "add_faction" | "voice" | "tokens" | "manage_factions";
+  "add_faction" | "voice" | "tokens" | "manage_factions" | "debug";
 
-// Права за замовчуванням — усі вимкнені для звичайних адмінів
-const DEFAULT_NO_PERMS: Record<TabId, boolean> = {
-  sos: false, applications: false, factions: false, licenses: false,
-  house_requests: false, news: false, houses: false, wanted: false,
-  election: false, documents: false, add_faction: false, voice: false, tokens: false,
-  manage_factions: false,
-};
 const DEFAULT_PERMS: Record<TabId, boolean> = {
   sos: true, applications: true, factions: true, licenses: true,
   house_requests: true, news: true, houses: true, wanted: true,
   election: true, documents: true, add_faction: true, voice: true, tokens: true,
   manage_factions: true,
+  debug: true,
 };
 
 const getAdminPerms = (nick: string): Record<TabId, boolean> => {
-  // Читаємо з localStorage (кеш) — синхронно для рендеру
   try {
     const s = localStorage.getItem(`crp_perms_${normalizeNick(nick)}`);
-    return s ? { ...DEFAULT_PERMS, ...JSON.parse(s) } : DEFAULT_NO_PERMS;
-  } catch { return DEFAULT_NO_PERMS; }
+    return s ? { ...DEFAULT_PERMS, ...JSON.parse(s) } : { ...DEFAULT_PERMS };
+  } catch { return { ...DEFAULT_PERMS }; }
 };
-const saveAdminPerms = async (nick: string, perms: Record<TabId, boolean>) => {
-  // Зберігаємо в Supabase І в localStorage (для швидкого доступу)
+const saveAdminPerms = (nick: string, perms: Record<TabId, boolean>) =>
   localStorage.setItem(`crp_perms_${normalizeNick(nick)}`, JSON.stringify(perms));
-  await supabase.from("admin_perms").upsert(
-    { username: normalizeNick(nick), perms, updated_at: new Date().toISOString() },
-    { onConflict: "username" }
-  );
-};
-const loadAdminPermsFromDB = async (nick: string): Promise<Record<TabId, boolean>> => {
-  const { data } = await supabase.from("admin_perms").select("perms").eq("username", normalizeNick(nick)).maybeSingle();
-  if (data?.perms) {
-    const p = { ...DEFAULT_PERMS, ...(data.perms as Record<TabId, boolean>) };
-    localStorage.setItem(`crp_perms_${normalizeNick(nick)}`, JSON.stringify(p));
-    return p;
-  }
-  return DEFAULT_NO_PERMS;
-};
 
 // ─── TAB LIST ─────────────────────────────────────────────────────────────────
 type Tab = TabId | "superadmin" | "restrictions";
@@ -102,6 +80,7 @@ const TAB_LIST: { id: TabId; label: string; icon: typeof Newspaper; sub: string;
   { id: "voice",         label: "Голос міста",           icon: Megaphone,     sub: "Управління" },
   { id: "tokens",        label: "Токени CR",             icon: Coins,         sub: "Фінанси" },
   { id: "manage_factions",label: "Управління фракціями",   icon: ShieldAlert,   sub: "Фракції" },
+  { id: "debug",           label: "Діагностика",            icon: Settings,      sub: "Debug" },
 ];
 
 const inputClass = "w-full liquid-glass rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 bg-transparent";
@@ -111,45 +90,8 @@ const AdminPanel = () => {
   const [tab, setTab] = useState<Tab | null>(null);
   const superAdmin = isSuperAdmin();
   const nick = localStorage.getItem("crp_nick") || "";
-  const [perms, setPerms] = useState<Record<TabId, boolean>>(
-    superAdmin ? DEFAULT_PERMS : getAdminPerms(nick)
-  );
-
-  // Завантажуємо актуальні права з Supabase при кожному відкритті
-  useEffect(() => {
-    if (superAdmin) return;
-    loadAdminPermsFromDB(nick).then(p => setPerms(p));
-  }, [nick, superAdmin]);
-
+  const perms = superAdmin ? DEFAULT_PERMS : getAdminPerms(nick);
   const allowedTabs = TAB_LIST.filter(t => superAdmin || perms[t.id]);
-
-  // Тільки t1kron1x має доступ
-  if (!superAdmin) {
-    return (
-      <div className="min-h-screen px-4 pt-4 flex flex-col items-center justify-center">
-        <div className="w-full max-w-sm animate-fade-in">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-5"
-              style={{ background: "hsl(0 70% 50% / 0.1)", border: "2px solid hsl(0 70% 50% / 0.3)", boxShadow: "0 0 40px hsl(0 70% 50% / 0.15)" }}>
-              <Lock className="w-12 h-12 text-destructive" style={{ filter: "drop-shadow(0 0 8px hsl(0 70% 50%))" }} />
-            </div>
-            <h1 className="font-display text-xl font-black tracking-widest text-destructive text-center mb-3">
-              ДОСТУП ЗАБОРОНЕНО
-            </h1>
-            <p className="text-xs font-bold text-muted-foreground text-center tracking-wider uppercase max-w-xs">
-              У ВАС НЕМАЄ ДОЗВОЛУ НА ВИКОРИСТАННЯ АДМІН-ПАНЕЛІ
-            </p>
-          </div>
-          <div className="liquid-glass rounded-2xl p-4 text-center"
-            style={{ border: "1px solid hsl(0 70% 50% / 0.15)" }}>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Подай заявку на адміністратора та дочекайся схвалення від головного адміністратора
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── TAB CONTENT ──
   if (tab) {
@@ -226,6 +168,7 @@ const AdminPanel = () => {
         {tab === "house_requests"&& <HouseRequestsTab />}
         {tab === "add_faction"   && <AddFactionTab />}
         {tab === "manage_factions" && <ManageFactionsTab />}
+        {tab === "debug"           && <DebugTab />}
       </div>
     );
   }
@@ -310,18 +253,13 @@ const SuperAdminTab = () => {
 
   const filtered = admins.filter(a => a.nick.toLowerCase().includes(search.toLowerCase()));
 
-  const openEdit = async (nick: string) => {
-    setSelectedNick(nick);
-    // Завантажуємо актуальні права з Supabase
-    const perms = await loadAdminPermsFromDB(nick);
-    setEditPerms(perms);
-  };
-  const savePerms = async () => {
+  const openEdit = (nick: string) => { setSelectedNick(nick); setEditPerms(getAdminPerms(nick)); };
+  const savePerms = () => {
     if (!selectedNick) return;
-    await saveAdminPerms(selectedNick, editPerms);
+    saveAdminPerms(selectedNick, editPerms);
     setAdmins(prev => prev.map(a => a.nick === selectedNick ? { ...a, perms: editPerms } : a));
     setSelectedNick(null);
-    toast.success(`Права для ${selectedNick} збережено в базі!`);
+    toast.success(`Права для ${selectedNick} збережено!`);
   };
   const toggleAll = (on: boolean) => {
     const p = {} as Record<TabId, boolean>;
@@ -807,6 +745,98 @@ const DocumentsTab = () => {
 };
 
 // ─── FACTION APPS ─────────────────────────────────────────────────────────────
+// ─── DEBUG TAB ────────────────────────────────────────────────────────────────
+const DebugTab = () => {
+  const [log, setLog] = useState<string[]>([]);
+  const addLog = (msg: string) => setLog(prev => [msg, ...prev].slice(0, 20));
+
+  const testInsertFaction = async () => {
+    addLog("⏳ Тестую faction_applications INSERT...");
+    const { data, error } = await supabase.from("faction_applications").insert({
+      faction_id: null,
+      faction_name: "Тест",
+      username: "debug_user",
+      status: "pending",
+      form_data: { nick: "debug_user", roblox: "test", age: "18", telegram: "@test", experience: "", message: "test" },
+    }).select();
+    if (error) {
+      addLog("❌ ПОМИЛКА: " + error.message);
+      addLog("   Code: " + error.code);
+      addLog("   Details: " + (error.details || "none"));
+      addLog("   Hint: " + (error.hint || "none"));
+    } else {
+      addLog("✅ faction_applications — OK! id=" + (data?.[0]?.id || "?"));
+      // Clean up test record
+      if (data?.[0]?.id) {
+        await supabase.from("faction_applications").delete().eq("id", data[0].id);
+        addLog("🧹 Тестовий запис видалено");
+      }
+    }
+  };
+
+  const testInsertAdmin = async () => {
+    addLog("⏳ Тестую admin_applications INSERT...");
+    const { data, error } = await supabase.from("admin_applications").insert({
+      username: "debug_user",
+      status: "pending",
+      form_data: { nick: "debug_user", roblox: "test", age: "18" },
+    }).select();
+    if (error) {
+      addLog("❌ ПОМИЛКА: " + error.message);
+      addLog("   Code: " + error.code);
+      addLog("   Details: " + (error.details || "none"));
+      addLog("   Hint: " + (error.hint || "none"));
+    } else {
+      addLog("✅ admin_applications — OK! id=" + (data?.[0]?.id || "?"));
+      if (data?.[0]?.id) {
+        await supabase.from("admin_applications").delete().eq("id", data[0].id);
+        addLog("🧹 Тестовий запис видалено");
+      }
+    }
+  };
+
+  const testSelect = async () => {
+    addLog("⏳ Тестую SELECT з обох таблиць...");
+    const { data: fa, error: fe } = await supabase.from("faction_applications").select("id").limit(1);
+    const { data: aa, error: ae } = await supabase.from("admin_applications").select("id").limit(1);
+    if (fe) addLog("❌ faction_applications SELECT: " + fe.message);
+    else addLog("✅ faction_applications SELECT OK, рядків: " + (fa?.length ?? 0));
+    if (ae) addLog("❌ admin_applications SELECT: " + ae.message);
+    else addLog("✅ admin_applications SELECT OK, рядків: " + (aa?.length ?? 0));
+  };
+
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <NeonCard glowColor="lime">
+        <h3 className="text-xs font-bold text-primary mb-3">Діагностика Supabase</h3>
+        <div className="space-y-2 mb-4">
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testSelect}>
+            Перевірити SELECT (читання)
+          </GradientButton>
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testInsertFaction}>
+            Тест INSERT faction_applications
+          </GradientButton>
+          <GradientButton variant="green" className="w-full text-xs py-2" onClick={testInsertAdmin}>
+            Тест INSERT admin_applications
+          </GradientButton>
+        </div>
+        {log.length > 0 && (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {log.map((l, i) => (
+              <div key={i} className="liquid-glass rounded-lg px-3 py-1.5">
+                <p className="text-[10px] font-mono text-foreground">{l}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {log.length === 0 && (
+          <p className="text-[10px] text-muted-foreground text-center">Натисни кнопку — побачиш результат</p>
+        )}
+      </NeonCard>
+    </div>
+  );
+};
+
 const FactionAppsTab = () => {
   const [apps, setApps] = useState<FactionApplication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -831,7 +861,7 @@ const FactionAppsTab = () => {
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateFactionAppStatus(id, status);
     const app = apps.find(a => a.id === id);
-    if (app?.nick) store.addNotification(app.nick, `Заявка у ${app.factionName} ${status === "approved" ? "✅ схвалена" : "❌ відхилена"}`);
+    store.addNotification(`Заявка у ${app?.factionName} ${status === "approved" ? "схвалена" : "відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
@@ -947,7 +977,7 @@ const AdminAppsTab = () => {
 
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateAdminAppStatus(id, status);
-    const appA = apps.find(a => a.id === id); if (appA?.nick) store.addNotification(appA.nick, `Заявка на адміністратора ${status === "approved" ? "✅ схвалена" : "❌ відхилена"}`);
+    store.addNotification(`Заявка на адміна ${status === "approved" ? "схвалена" : "відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
@@ -1153,7 +1183,7 @@ const GradientBuilder = ({ onChange }: { onChange: (gradient: string, color: str
 const AddFactionTab = () => {
   const [name, setName] = useState("");
   const [color, setColor] = useState("#22c55e");
-  const [logoUrl, setLogoUrl] = useState("icon:0"); // icon:N = built-in icon
+  const [logoUrl, setLogoUrl] = useState("");
   const [gradient, setGradient] = useState("");
   const [section, setSection] = useState<"main" | "separate">("main");
   const [saving, setSaving] = useState(false);
@@ -1198,29 +1228,11 @@ const AddFactionTab = () => {
             </div>
           </div>
 
-          {/* Name */}
+          {/* Name + logo */}
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Назва фракції" className={inputClass} />
-
-          {/* Icon picker */}
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block font-semibold flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> Іконка фракції
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {([
-                Shield, Swords, AlertTriangle, Car, FileText, Users,
-                Building2, MessageSquare, Crosshair, Gavel, Coins, ShieldCheck,
-                Crown, Lock, Star, Zap, Eye, Search,
-              ] as const).map((Icon, i) => (
-                <button key={i} type="button"
-                  onClick={() => setLogoUrl(`icon:${i}`)}
-                  className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 ${
-                    logoUrl === `icon:${i}` ? "bg-primary/20 border border-primary/40" : "liquid-glass hover:border-primary/20"
-                  }`}>
-                  <Icon className={`w-5 h-5 ${logoUrl === `icon:${i}` ? "text-primary" : "text-muted-foreground"}`} />
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-2">
+            <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Логотип (https://...)" className={`${inputClass} flex-1`} />
+            {logoUrl && <img src={logoUrl} alt="" className="w-10 h-10 object-cover rounded-xl shrink-0" onError={e => (e.currentTarget.style.display = "none")} />}
           </div>
 
           {/* Gradient builder */}
@@ -1475,9 +1487,9 @@ const RestrictionsTab = () => {
     toast.success(`Знайдено: ${n}`);
   };
 
-  const save = async () => {
+  const save = () => {
     if (!found) return;
-    await saveAdminPerms(found.nick, editPerms);
+    saveAdminPerms(found.nick, editPerms);
     setFound({ ...found, perms: editPerms });
     toast.success(`Обмеження для ${found.nick} збережено!`);
   };
@@ -1587,7 +1599,7 @@ const ManageFactionsTab = () => {
 
   const decide = async (id: number, status: "approved" | "rejected") => {
     await store.updateFactionAppStatus(id, status);
-    // notification handled above
+    store.addNotification(`Заявка у фракцію ${status === "approved" ? "схвалена" : "відхилена"}`);
     setApps(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     toast.success(status === "approved" ? "Схвалено!" : "Відхилено!");
   };
